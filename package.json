@@ -37,6 +37,10 @@
       {
         "command": "pixel-agents.exportDefaultLayout",
         "title": "Pixel Agents: Export Layout as Default"
+      },
+      {
+        "command": "pixel-agents.enterLicenseKey",
+        "title": "Pixel Agents: Enter License Key"
       }
     ],
     "viewsContainers": {

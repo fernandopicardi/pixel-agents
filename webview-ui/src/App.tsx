@@ -121,7 +121,15 @@ function App() {
 
   const isEditDirty = useCallback(() => editor.isEditMode && editor.isDirty, [editor.isEditMode, editor.isDirty])
 
-  const { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty)
+  const { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty)
+
+  const handleSubmitLicense = useCallback((key: string) => {
+    vscode.postMessage({ type: 'setLicenseKey', key })
+  }, [])
+
+  const handleClearLicense = useCallback(() => {
+    vscode.postMessage({ type: 'clearLicenseKey' })
+  }, [])
 
   const [isDebugMode, setIsDebugMode] = useState(false)
 
@@ -231,6 +239,9 @@ function App() {
         onToggleDebugMode={handleToggleDebugMode}
         workspaceFolders={workspaceFolders}
         ideType={ideType}
+        license={license}
+        onSubmitLicense={handleSubmitLicense}
+        onClearLicense={handleClearLicense}
       />
 
       {editor.isEditMode && editor.isDirty && (
@@ -291,6 +302,7 @@ function App() {
         agents={agents}
         agentTools={agentTools}
         agentProgress={agentProgress}
+        isPremium={license.isPremium}
         subagentCharacters={subagentCharacters}
         containerRef={containerRef}
         zoom={editor.zoom}

@@ -32,6 +32,11 @@ export const LAYOUT_FILE_POLL_INTERVAL_MS = 2000;
 // ── Settings Persistence ────────────────────────────────────
 export const GLOBAL_KEY_SOUND_ENABLED = 'pixel-agents.soundEnabled';
 
+// ── License ─────────────────────────────────────────────────
+export const GLOBAL_KEY_LICENSE = 'pixel-agents.licenseKey';
+export const COMMAND_ENTER_LICENSE = 'pixel-agents.enterLicenseKey';
+export const LICENSE_KEY_REGEX = /^PA-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+
 // ── IDE Identifiers ─────────────────────────────────────────
 export const VIEW_ID = 'pixel-agents.panelView';
 export const COMMAND_SHOW_PANEL = 'pixel-agents.showPanel';

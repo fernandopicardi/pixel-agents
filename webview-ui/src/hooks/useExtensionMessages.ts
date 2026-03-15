@@ -46,6 +46,12 @@ export interface AgentProgress {
   toolCount: number
 }
 
+export interface LicenseState {
+  isPremium: boolean
+  licenseKey: string | null
+  validationError: string | null
+}
+
 export interface ExtensionMessageState {
   agents: number[]
   selectedAgent: number | null
@@ -58,6 +64,7 @@ export interface ExtensionMessageState {
   loadedAssets?: { catalog: FurnitureAsset[]; sprites: Record<string, string[][]> }
   workspaceFolders: WorkspaceFolder[]
   ideType: IdeType
+  license: LicenseState
 }
 
 function saveAgentSeats(os: OfficeState): void {
@@ -85,6 +92,7 @@ export function useExtensionMessages(
   const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>([])
   const [ideType, setIdeType] = useState<IdeType>('vscode')
   const [agentProgress, setAgentProgress] = useState<Record<number, AgentProgress>>({})
+  const [license, setLicense] = useState<LicenseState>({ isPremium: false, licenseKey: null, validationError: null })
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
   const layoutReadyRef = useRef(false)
@@ -370,6 +378,12 @@ export function useExtensionMessages(
         setSoundEnabled(soundOn)
       } else if (msg.type === 'ideInfo') {
         setIdeType(msg.ide as IdeType)
+      } else if (msg.type === 'licenseStatus') {
+        setLicense({
+          isPremium: msg.isPremium as boolean,
+          licenseKey: (msg.licenseKey as string | null) ?? null,
+          validationError: (msg.validationError as string | null) ?? null,
+        })
       } else if (msg.type === 'furnitureAssetsLoaded') {
         try {
           const catalog = msg.catalog as FurnitureAsset[]
@@ -388,5 +402,5 @@ export function useExtensionMessages(
     return () => window.removeEventListener('message', handler)
   }, [getOfficeState])
 
-  return { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType }
+  return { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license }
 }

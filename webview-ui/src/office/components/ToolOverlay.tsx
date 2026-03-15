@@ -13,6 +13,7 @@ interface ToolOverlayProps {
   agents: number[]
   agentTools: Record<number, ToolActivity[]>
   agentProgress: Record<number, AgentProgress>
+  isPremium: boolean
   subagentCharacters: SubagentCharacter[]
   containerRef: React.RefObject<HTMLDivElement | null>
   zoom: number
@@ -60,6 +61,7 @@ export function ToolOverlay({
   agents,
   agentTools,
   agentProgress,
+  isPremium,
   subagentCharacters,
   containerRef,
   zoom,
@@ -250,8 +252,8 @@ export function ToolOverlay({
                   </button>
                 )}
               </div>
-              {/* Progress bar */}
-              {progress !== null && (
+              {/* Progress bar — premium only */}
+              {progress !== null && isPremium && (
                 <div
                   style={{
                     marginTop: 3,

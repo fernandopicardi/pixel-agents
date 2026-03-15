@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { SettingsModal } from './SettingsModal.js'
-import type { WorkspaceFolder, IdeType } from '../hooks/useExtensionMessages.js'
+import type { WorkspaceFolder, IdeType, LicenseState } from '../hooks/useExtensionMessages.js'
 import { vscode } from '../vscodeApi.js'
 
 interface BottomToolbarProps {
@@ -11,6 +11,9 @@ interface BottomToolbarProps {
   onToggleDebugMode: () => void
   workspaceFolders: WorkspaceFolder[]
   ideType: IdeType
+  license: LicenseState
+  onSubmitLicense: (key: string) => void
+  onClearLicense: () => void
 }
 
 const panelStyle: React.CSSProperties = {
@@ -53,6 +56,9 @@ export function BottomToolbar({
   onToggleDebugMode,
   workspaceFolders,
   ideType,
+  license,
+  onSubmitLicense,
+  onClearLicense,
 }: BottomToolbarProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -187,6 +193,9 @@ export function BottomToolbar({
           isDebugMode={isDebugMode}
           onToggleDebugMode={onToggleDebugMode}
           ideType={ideType}
+          license={license}
+          onSubmitLicense={onSubmitLicense}
+          onClearLicense={onClearLicense}
         />
       </div>
     </div>

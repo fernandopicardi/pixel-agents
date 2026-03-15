@@ -19,6 +19,7 @@ import { loadFurnitureAssets, sendAssetsToWebview, loadFloorTiles, sendFloorTile
 import { WORKSPACE_KEY_AGENT_SEATS, GLOBAL_KEY_SOUND_ENABLED } from './constants.js';
 import { writeLayoutToFile, readLayoutFromFile, watchLayoutFile } from './layoutPersistence.js';
 import type { LayoutWatcher } from './layoutPersistence.js';
+import { getLicenseStatus, setLicenseKey, clearLicenseKey } from './license.js';
 
 export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	nextAgentId = { current: 1 };
@@ -96,6 +97,12 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				writeLayoutToFile(message.layout as Record<string, unknown>);
 			} else if (message.type === 'setSoundEnabled') {
 				this.context.globalState.update(GLOBAL_KEY_SOUND_ENABLED, message.enabled);
+			} else if (message.type === 'setLicenseKey') {
+				const status = setLicenseKey(this.context, message.key as string);
+				this.webview?.postMessage({ type: 'licenseStatus', ...status });
+			} else if (message.type === 'clearLicenseKey') {
+				clearLicenseKey(this.context);
+				this.webview?.postMessage({ type: 'licenseStatus', isPremium: false, licenseKey: null, validationError: null });
 			} else if (message.type === 'webviewReady') {
 				restoreAgents(
 					this.context,
@@ -115,6 +122,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				const soundEnabled = this.context.globalState.get<boolean>(GLOBAL_KEY_SOUND_ENABLED, true);
 				this.webview?.postMessage({ type: 'settingsLoaded', soundEnabled });
 				this.webview?.postMessage({ type: 'ideInfo', ide: this.ideType });
+				this.sendLicenseStatus();
 
 				// Send workspace folders to webview (only when multi-root)
 				const wsFolders = vscode.workspace.workspaceFolders;
@@ -324,6 +332,12 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 		const json = JSON.stringify(layout, null, 2);
 		fs.writeFileSync(targetPath, json, 'utf-8');
 		vscode.window.showInformationMessage(`Pixel Agents: Default layout exported to ${targetPath}`);
+	}
+
+	/** Send current license status to the webview */
+	sendLicenseStatus(): void {
+		const status = getLicenseStatus(this.context);
+		this.webview?.postMessage({ type: 'licenseStatus', ...status });
 	}
 
 	private startLayoutWatcher(): void {
