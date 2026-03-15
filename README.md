@@ -4,21 +4,20 @@ A VS Code / Cursor IDE extension that turns your AI coding agents into animated 
 
 Each Claude Code terminal you open spawns a character that walks around, sits at desks, and visually reflects what the agent is doing — typing when writing code, reading when searching files, waiting when it needs your attention.
 
-This is the source code for the free [Pixel Agents extension for VS Code](https://marketplace.visualstudio.com/items?itemName=pablodelucca.pixel-agents) — you can install it directly from the marketplace with the full furniture catalog included. It also works on **Cursor IDE** (see installation instructions below).
-
-
 ![Pixel Agents screenshot](webview-ui/public/Screenshot.jpg)
 
 ## Features
 
 - **One agent, one character** — every Claude Code terminal gets its own animated character
 - **Live activity tracking** — characters animate based on what the agent is actually doing (writing, reading, running commands)
+- **Agent hover tooltip** — hover over any character to see its name, current task, and estimated progress bar
+- **Auto-detect existing agents** — terminals already running Claude Code are automatically adopted on startup
 - **Office layout editor** — design your office with floors, walls, and furniture using a built-in editor
 - **Speech bubbles** — visual indicators when an agent is waiting for input or needs permission
 - **Sound notifications** — optional chime when an agent finishes its turn
 - **Sub-agent visualization** — Task tool sub-agents spawn as separate characters linked to their parent
 - **Persistent layouts** — your office design is saved and shared across windows
-- **Diverse characters** — 6 diverse characters. These are based on the amazing work of [JIK-A-4, Metro City](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack).
+- **Diverse characters** — 6 diverse characters based on [JIK-A-4, Metro City](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack)
 - **Multi-IDE support** — works in both VS Code and Cursor IDE
 
 <p align="center">
@@ -32,65 +31,58 @@ This is the source code for the free [Pixel Agents extension for VS Code](https:
 
 ## Getting Started
 
-### Option 1 — Install from VS Code Marketplace
+### Install from VSIX (VS Code or Cursor)
 
-If you use VS Code, the easiest way is to download the [Pixel Agents extension](https://marketplace.visualstudio.com/items?itemName=pablodelucca.pixel-agents) directly from the marketplace.
-
-### Option 2 — Install on Cursor IDE
-
-Cursor IDE is a fork of VS Code and does not have access to the VS Code Marketplace. You need to install the extension manually via a `.vsix` file. There are three ways to do this:
+Download the latest `.vsix` from [Releases](https://github.com/fernandopicardi/pixel-agents/releases), then:
 
 #### Method A — Command Palette (recommended)
 
-1. Open Cursor IDE
+1. Open VS Code or Cursor IDE
 2. Open the **Command Palette** with `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
 3. Type **`Extensions: Install from VSIX...`** and select it
 4. Navigate to the `.vsix` file and select it
-5. Restart Cursor when prompted
 
 #### Method B — Command Line
 
 ```bash
-cursor --install-extension pixel-agents-1.0.2.vsix
+# VS Code
+code --install-extension pixel-agents-2.0.0.vsix
+
+# Cursor
+cursor --install-extension pixel-agents-2.0.0.vsix
 ```
 
 #### Method C — Drag and Drop
 
-1. Open the **Extensions** panel in Cursor (`Ctrl+Shift+X`)
-2. Drag the `.vsix` file from your file explorer and drop it directly into the Extensions panel
+1. Open the **Extensions** panel (`Ctrl+Shift+X`)
+2. Drag the `.vsix` file from your file explorer and drop it into the Extensions panel
 
-> **Note:** Manually installed extensions do not auto-update. You will need to repeat this process when new versions are released.
-
-### Option 3 — Build from source
-
-If you want to play with the code, develop, or contribute:
+### Build from source
 
 ```bash
-git clone https://github.com/pablodelucca/pixel-agents.git
+git clone https://github.com/fernandopicardi/pixel-agents.git
 cd pixel-agents
 npm install
 cd webview-ui && npm install && cd ..
 npm run build
 ```
 
-**For VS Code development:** press **F5** to launch the Extension Development Host.
+**For development:** press **F5** in VS Code to launch the Extension Development Host.
 
-**To generate a `.vsix` for Cursor (or manual VS Code install):**
+**To generate a `.vsix`:**
 
 ```bash
 npx @vscode/vsce package --allow-missing-repository
 ```
 
-This creates a `pixel-agents-x.x.x.vsix` file in the project root. Then install it using any of the methods described in Option 2 above.
-
 ### Usage
 
-1. Open the **Pixel Agents** panel (it appears in the bottom panel area alongside your terminal)
+1. Open the **Pixel Agents** panel (bottom panel area alongside your terminal)
 2. Click **+ Agent** to spawn a new Claude Code terminal and its character
 3. Start coding with Claude — watch the character react in real time
-4. Click a character to select it, then click a seat to reassign it
-5. Click **Layout** to open the office editor and customize your space
-6. Open **Settings** to see which IDE you're running in (VS Code or Cursor)
+4. **Hover** over a character to see its current task and progress
+5. Click a character to select it, then click a seat to reassign it
+6. Click **Layout** to open the office editor and customize your space
 
 ## Layout Editor
 
@@ -102,27 +94,25 @@ The built-in editor lets you design your office:
 - **Undo/Redo** — 50 levels with Ctrl+Z / Ctrl+Y
 - **Export/Import** — Share layouts as JSON files via the Settings modal
 
-The grid is expandable up to 64×64 tiles. Click the ghost border outside the current grid to grow it.
+The grid is expandable up to 64x64 tiles. Click the ghost border outside the current grid to grow it.
 
 ### Office Assets
 
-The office tileset used in this project and available via the extension is **[Office Interior Tileset (16x16)](https://donarg.itch.io/officetileset)** by **Donarg**, available on itch.io for **$2 USD**.
+The office tileset is **[Office Interior Tileset (16x16)](https://donarg.itch.io/officetileset)** by **Donarg**, available on itch.io for **$2 USD**.
 
-This is the only part of the project that is not freely available. The tileset is not included in this repository due to its license. To use Pixel Agents locally with the full set of office furniture and decorations, purchase the tileset and run the asset import pipeline:
+The tileset is not included in this repository due to its license. To import it:
 
 ```bash
 npm run import-tileset
 ```
 
-Fair warning: the import pipeline is not exactly straightforward — the out-of-the-box tileset assets aren't the easiest to work with, and while I've done my best to make the process as smooth as possible, it may require some manual tweaking. If you have experience creating pixel art office assets and would like to contribute freely usable tilesets for the community, that would be hugely appreciated.
-
-The extension will still work without the tileset — you'll get the default characters and basic layout, but the full furniture catalog requires the imported assets.
+The extension works without the tileset — you get default characters and basic layout, but the full furniture catalog requires the imported assets.
 
 ## How It Works
 
 Pixel Agents watches Claude Code's JSONL transcript files to track what each agent is doing. When an agent uses a tool (like writing a file or running a command), the extension detects it and updates the character's animation accordingly. No modifications to Claude Code are needed — it's purely observational.
 
-The webview runs a lightweight game loop with canvas rendering, BFS pathfinding, and a character state machine (idle → walk → type/read). Everything is pixel-perfect at integer zoom levels.
+The webview runs a lightweight game loop with canvas rendering, BFS pathfinding, and a character state machine (idle -> walk -> type/read). Everything is pixel-perfect at integer zoom levels.
 
 ## Tech Stack
 
@@ -130,44 +120,19 @@ The webview runs a lightweight game loop with canvas rendering, BFS pathfinding,
 - **Webview**: React 19, TypeScript, Vite, Canvas 2D
 - **Compatibility**: VS Code 1.85.0+, Cursor IDE
 
-## Known Limitations
-
-- **Agent-terminal sync** — the way agents are connected to Claude Code terminal instances is not super robust and sometimes desyncs, especially when terminals are rapidly opened/closed or restored across sessions.
-- **Heuristic-based status detection** — Claude Code's JSONL transcript format does not provide clear signals for when an agent is waiting for user input or when it has finished its turn. The current detection is based on heuristics (idle timers, turn-duration events) and often misfires — agents may briefly show the wrong status or miss transitions.
-- **Windows-only testing** — the extension has only been tested on Windows 11. It may work on macOS or Linux, but there could be unexpected issues with file watching, paths, or terminal behavior on those platforms.
-- **Cursor IDE** — while the extension is compatible with Cursor, it has not been extensively tested there. If you find issues specific to Cursor, please open an issue.
-
 ## Roadmap
 
-There are several areas where contributions would be very welcome:
+See [ROADMAP.md](ROADMAP.md) for the full feature roadmap with 11 planned features across 7 sprints.
 
-- **Improve agent-terminal reliability** — more robust connection and sync between characters and Claude Code instances
-- **Better status detection** — find or propose clearer signals for agent state transitions (waiting, done, permission needed)
-- **Community assets** — freely usable pixel art tilesets or characters that anyone can use without purchasing third-party assets
-- **Agent creation and definition** — define agents with custom skills, system prompts, names, and skins before launching them
-- **Desks as directories** — click on a desk to select a working directory, drag and drop agents or click-to-assign to move them to specific desks/projects
-- **Claude Code agent teams** — native support for [agent teams](https://code.claude.com/docs/en/agent-teams), visualizing multi-agent coordination and communication
-- **Git worktree support** — agents working in different worktrees to avoid conflict from parallel work on the same files
-- **Support for other agentic frameworks** — [OpenCode](https://github.com/nichochar/opencode), or really any kind of agentic experiment you'd want to run inside a pixel art interface (see [simile.ai](https://simile.ai/) for inspiration)
+## Known Limitations
 
-If any of these interest you, feel free to open an issue or submit a PR.
+- **Agent-terminal sync** — sometimes desyncs when terminals are rapidly opened/closed or restored across sessions
+- **Heuristic-based status detection** — based on idle timers and turn-duration events; may briefly show wrong status
+- **Windows-only testing** — may work on macOS/Linux but untested
 
-## Contributions
+## Credits
 
-See [CONTRIBUTORS.md](CONTRIBUTORS.md) for instructions on how to contribute to this project.
-
-Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
-
-## Supporting the Project
-
-If you find Pixel Agents useful, consider supporting its development:
-
-<a href="https://github.com/sponsors/pablodelucca">
-  <img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github" alt="GitHub Sponsors">
-</a>
-<a href="https://ko-fi.com/pablodelucca">
-  <img src="https://img.shields.io/badge/Support-Ko--fi-ff5e5b?logo=ko-fi" alt="Ko-fi">
-</a>
+This project is a fork of [Pixel Agents](https://github.com/pablodelucca/pixel-agents) by **Pablo De Lucca**, licensed under MIT. Character sprites based on [JIK-A-4, Metro City](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack).
 
 ## License
 
