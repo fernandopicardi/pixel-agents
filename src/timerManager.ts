@@ -72,6 +72,7 @@ export function startPermissionTimer(
 	permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
 	permissionExemptTools: Set<string>,
 	webview: vscode.Webview | undefined,
+	onPermissionDetected?: (agentId: number) => void,
 ): void {
 	cancelPermissionTimer(agentId, permissionTimers);
 	const timer = setTimeout(() => {
@@ -104,6 +105,7 @@ export function startPermissionTimer(
 		if (hasNonExempt) {
 			agent.permissionSent = true;
 			console.log(`[Pixel Agents] Agent ${agentId}: possible permission wait detected`);
+			onPermissionDetected?.(agentId);
 			webview?.postMessage({
 				type: 'agentToolPermission',
 				id: agentId,

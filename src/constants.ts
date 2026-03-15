@@ -29,6 +29,14 @@ export const LAYOUT_FILE_DIR = '.pixel-agents';
 export const LAYOUT_FILE_NAME = 'layout.json';
 export const LAYOUT_FILE_POLL_INTERVAL_MS = 2000;
 
+// ── Smart Notifications ─────────────────────────────────────
+export const LONG_TASK_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+export const LOOP_DETECTION_COUNT = 5;
+export const GLOBAL_KEY_NOTIFICATION_PREFS = 'pixel-agents.notificationPrefs';
+
+// ── Agent Templates ─────────────────────────────────────────
+export const WORKSPACE_KEY_TEMPLATES = 'pixel-agents.templates';
+
 // ── Settings Persistence ────────────────────────────────────
 export const GLOBAL_KEY_SOUND_ENABLED = 'pixel-agents.soundEnabled';
 

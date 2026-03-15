@@ -14,6 +14,11 @@ import {
 	BASH_COMMAND_DISPLAY_MAX_LENGTH,
 	TASK_DESCRIPTION_DISPLAY_MAX_LENGTH,
 } from './constants.js';
+import {
+	onToolStarted,
+	checkLoopDetection,
+	resetTurnNotificationState,
+} from './notificationManager.js';
 
 export const PERMISSION_EXEMPT_TOOLS = new Set(['Task', 'AskUserQuestion']);
 
@@ -42,6 +47,11 @@ export function formatToolStatus(toolName: string, input: Record<string, unknown
 	}
 }
 
+export type NotificationEvent =
+	| { kind: 'permission'; agentId: number }
+	| { kind: 'longTaskComplete'; agentId: number }
+	| { kind: 'loopDetected'; agentId: number; toolName: string };
+
 export function processTranscriptLine(
 	agentId: number,
 	line: string,
@@ -49,9 +59,13 @@ export function processTranscriptLine(
 	waitingTimers: Map<number, ReturnType<typeof setTimeout>>,
 	permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
 	webview: vscode.Webview | undefined,
+	onNotification?: (event: NotificationEvent) => void,
 ): void {
 	const agent = agents.get(agentId);
 	if (!agent) return;
+	const onPermissionDetected = onNotification
+		? (id: number) => onNotification({ kind: 'permission', agentId: id })
+		: undefined;
 	try {
 		const record = JSON.parse(line);
 
@@ -78,6 +92,8 @@ export function processTranscriptLine(
 						if (!PERMISSION_EXEMPT_TOOLS.has(toolName)) {
 							hasNonExemptTool = true;
 						}
+						// Track for smart notifications
+						onToolStarted(agent, toolName);
 						webview?.postMessage({
 							type: 'agentToolStart',
 							id: agentId,
@@ -87,7 +103,7 @@ export function processTranscriptLine(
 					}
 				}
 				if (hasNonExemptTool) {
-					startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview);
+					startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview, onPermissionDetected);
 				}
 			} else if (blocks.some(b => b.type === 'text') && !agent.hadToolsInTurn) {
 				// Text-only response in a turn that hasn't used any tools.
@@ -97,7 +113,7 @@ export function processTranscriptLine(
 				startWaitingTimer(agentId, TEXT_IDLE_DELAY_MS, agents, waitingTimers, webview);
 			}
 		} else if (record.type === 'progress') {
-			processProgressRecord(agentId, record, agents, waitingTimers, permissionTimers, webview);
+			processProgressRecord(agentId, record, agents, waitingTimers, permissionTimers, webview, onPermissionDetected);
 		} else if (record.type === 'user') {
 			const content = record.message?.content;
 			if (Array.isArray(content)) {
@@ -128,6 +144,11 @@ export function processTranscriptLine(
 								id: agentId,
 								toolCount: agent.turnToolCount,
 							});
+							// Check for loop detection
+							const loopTool = checkLoopDetection(agent);
+							if (loopTool) {
+								onNotification?.({ kind: 'loopDetected', agentId, toolName: loopTool });
+							}
 							const toolId = completedToolId;
 							setTimeout(() => {
 								webview?.postMessage({
@@ -149,6 +170,7 @@ export function processTranscriptLine(
 					clearAgentActivity(agent, agentId, permissionTimers, webview);
 					agent.hadToolsInTurn = false;
 					agent.turnToolCount = 0;
+					resetTurnNotificationState(agent);
 				}
 			} else if (typeof content === 'string' && content.trim()) {
 				// New user text prompt — new turn starting
@@ -156,10 +178,14 @@ export function processTranscriptLine(
 				clearAgentActivity(agent, agentId, permissionTimers, webview);
 				agent.hadToolsInTurn = false;
 				agent.turnToolCount = 0;
+				resetTurnNotificationState(agent);
 			}
 		} else if (record.type === 'system' && record.subtype === 'turn_duration') {
 			cancelWaitingTimer(agentId, waitingTimers);
 			cancelPermissionTimer(agentId, permissionTimers);
+
+			// Fire long-task notification before resetting state
+			onNotification?.({ kind: 'longTaskComplete', agentId });
 
 			// Definitive turn-end: clean up any stale tool state
 			if (agent.activeToolIds.size > 0) {
@@ -175,6 +201,7 @@ export function processTranscriptLine(
 			agent.permissionSent = false;
 			agent.hadToolsInTurn = false;
 			agent.turnToolCount = 0;
+			resetTurnNotificationState(agent);
 			webview?.postMessage({
 				type: 'agentStatus',
 				id: agentId,
@@ -193,6 +220,7 @@ function processProgressRecord(
 	waitingTimers: Map<number, ReturnType<typeof setTimeout>>,
 	permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
 	webview: vscode.Webview | undefined,
+	onPermissionDetected?: (agentId: number) => void,
 ): void {
 	const agent = agents.get(agentId);
 	if (!agent) return;
@@ -208,7 +236,7 @@ function processProgressRecord(
 	const dataType = data.type as string | undefined;
 	if (dataType === 'bash_progress' || dataType === 'mcp_progress') {
 		if (agent.activeToolIds.has(parentToolId)) {
-			startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview);
+			startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview, onPermissionDetected);
 		}
 		return;
 	}
@@ -262,7 +290,7 @@ function processProgressRecord(
 			}
 		}
 		if (hasNonExemptSubTool) {
-			startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview);
+			startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview, onPermissionDetected);
 		}
 	} else if (msgType === 'user') {
 		for (const block of content) {
@@ -303,7 +331,7 @@ function processProgressRecord(
 			if (stillHasNonExempt) break;
 		}
 		if (stillHasNonExempt) {
-			startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview);
+			startPermissionTimer(agentId, agents, permissionTimers, PERMISSION_EXEMPT_TOOLS, webview, onPermissionDetected);
 		}
 	}
 }

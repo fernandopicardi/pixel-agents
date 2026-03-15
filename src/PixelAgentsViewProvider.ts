@@ -19,7 +19,17 @@ import { loadFurnitureAssets, sendAssetsToWebview, loadFloorTiles, sendFloorTile
 import { WORKSPACE_KEY_AGENT_SEATS, GLOBAL_KEY_SOUND_ENABLED } from './constants.js';
 import { writeLayoutToFile, readLayoutFromFile, watchLayoutFile } from './layoutPersistence.js';
 import type { LayoutWatcher } from './layoutPersistence.js';
-import { getLicenseStatus, setLicenseKey, clearLicenseKey } from './license.js';
+import { getLicenseStatus, setLicenseKey, clearLicenseKey, isPremium } from './license.js';
+import type { NotificationPrefs, AgentTemplate } from './types.js';
+import type { NotificationEvent } from './transcriptParser.js';
+import { getAllTemplates, getTemplateById, saveCustomTemplate, deleteCustomTemplate, BUILT_IN_TEMPLATES } from './agentTemplates.js';
+import {
+	getNotificationPrefs,
+	setNotificationPrefs,
+	notifyPermissionWait,
+	notifyLongTaskComplete,
+	notifyLoopDetected,
+} from './notificationManager.js';
 
 export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	nextAgentId = { current: 1 };
@@ -63,6 +73,23 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 		persistAgents(this.agents, this.context);
 	};
 
+	private handleNotification = (event: NotificationEvent): void => {
+		const agent = this.agents.get(event.agentId);
+		if (!agent) return;
+
+		switch (event.kind) {
+			case 'permission':
+				notifyPermissionWait(this.context, agent);
+				break;
+			case 'longTaskComplete':
+				notifyLongTaskComplete(this.context, agent);
+				break;
+			case 'loopDetected':
+				notifyLoopDetected(this.context, agent, event.toolName);
+				break;
+		}
+	};
+
 	resolveWebviewView(webviewView: vscode.WebviewView) {
 		this.webviewView = webviewView;
 		webviewView.webview.options = { enableScripts: true };
@@ -70,6 +97,15 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.onDidReceiveMessage(async (message) => {
 			if (message.type === 'openClaude') {
+				const templateId = message.templateId as string | undefined;
+				let template: AgentTemplate | undefined;
+				if (templateId) {
+					template = getTemplateById(this.context, templateId);
+					// Custom templates require premium
+					if (template && !template.builtIn && !isPremium(this.context)) {
+						template = undefined;
+					}
+				}
 				await launchNewTerminal(
 					this.nextAgentId, this.nextTerminalIndex,
 					this.agents, this.activeAgentId, this.knownJsonlFiles,
@@ -77,6 +113,8 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 					this.jsonlPollTimers, this.projectScanTimer,
 					this.webview, this.persistAgents,
 					message.folderPath as string | undefined,
+					this.handleNotification,
+					template,
 				);
 			} else if (message.type === 'focusAgent') {
 				const agent = this.agents.get(message.id);
@@ -97,6 +135,19 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				writeLayoutToFile(message.layout as Record<string, unknown>);
 			} else if (message.type === 'setSoundEnabled') {
 				this.context.globalState.update(GLOBAL_KEY_SOUND_ENABLED, message.enabled);
+			} else if (message.type === 'setNotificationPrefs') {
+				setNotificationPrefs(this.context, message.prefs as NotificationPrefs);
+				this.webview?.postMessage({ type: 'notificationPrefsLoaded', prefs: message.prefs });
+			} else if (message.type === 'saveTemplate') {
+				const tmpl = message.template as AgentTemplate;
+				if (!isPremium(this.context)) return;
+				saveCustomTemplate(this.context, tmpl);
+				this.sendTemplates();
+			} else if (message.type === 'deleteTemplate') {
+				const id = message.templateId as string;
+				if (!isPremium(this.context)) return;
+				deleteCustomTemplate(this.context, id);
+				this.sendTemplates();
 			} else if (message.type === 'setLicenseKey') {
 				const status = setLicenseKey(this.context, message.key as string);
 				this.webview?.postMessage({ type: 'licenseStatus', ...status });
@@ -111,16 +162,21 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 					this.fileWatchers, this.pollingTimers, this.waitingTimers, this.permissionTimers,
 					this.jsonlPollTimers, this.projectScanTimer, this.activeAgentId,
 					this.webview, this.persistAgents,
+					this.handleNotification,
 				);
 				// Adopt existing Claude Code terminals not previously tracked
 				adoptExistingTerminals(
 					this.nextAgentId, this.agents, this.activeAgentId, this.knownJsonlFiles,
 					this.fileWatchers, this.pollingTimers, this.waitingTimers, this.permissionTimers,
 					this.webview, this.persistAgents,
+					this.handleNotification,
 				);
 				// Send persisted settings and IDE info to webview
 				const soundEnabled = this.context.globalState.get<boolean>(GLOBAL_KEY_SOUND_ENABLED, true);
 				this.webview?.postMessage({ type: 'settingsLoaded', soundEnabled });
+				const notifPrefs = getNotificationPrefs(this.context);
+				this.webview?.postMessage({ type: 'notificationPrefsLoaded', prefs: notifPrefs });
+				this.sendTemplates();
 				this.webview?.postMessage({ type: 'ideInfo', ide: this.ideType });
 				this.sendLicenseStatus();
 
@@ -332,6 +388,12 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 		const json = JSON.stringify(layout, null, 2);
 		fs.writeFileSync(targetPath, json, 'utf-8');
 		vscode.window.showInformationMessage(`Pixel Agents: Default layout exported to ${targetPath}`);
+	}
+
+	/** Send available templates to the webview */
+	private sendTemplates(): void {
+		const templates = getAllTemplates(this.context);
+		this.webview?.postMessage({ type: 'templatesLoaded', templates });
 	}
 
 	/** Send current license status to the webview */

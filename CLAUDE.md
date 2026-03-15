@@ -27,7 +27,9 @@ src/                          — Extension backend (Node.js, VS Code API)
   fileWatcher.ts              — fs.watch + polling, readNewLines, /clear detection, terminal adoption
   transcriptParser.ts         — JSONL parsing: tool_use/tool_result → webview messages
   timerManager.ts             — Waiting/permission timer logic
-  types.ts                    — Shared interfaces (AgentState, PersistedAgent)
+  notificationManager.ts      — Smart notifications: OS alerts for permission/long-task/loop
+  agentTemplates.ts           — Built-in + custom template registry, CRUD operations
+  types.ts                    — Shared interfaces (AgentState, PersistedAgent, NotificationPrefs, AgentTemplate)
 
 webview-ui/src/               — React + TypeScript (Vite)
   constants.ts                — All webview magic numbers/strings (grid, animation, rendering, camera, zoom, editor, game logic, notification sound)
@@ -85,9 +87,11 @@ scripts/                      — 7-stage asset extraction pipeline
 
 **Vocabulary**: Terminal = VS Code terminal running Claude. Session = JSONL conversation file. Agent = webview character bound 1:1 to a terminal.
 
-**Extension ↔ Webview**: `postMessage` protocol. Key messages: `openClaude`, `agentCreated/Closed`, `focusAgent`, `agentToolStart/Done/Clear`, `agentStatus`, `existingAgents`, `layoutLoaded`, `furnitureAssetsLoaded`, `floorTilesLoaded`, `wallTilesLoaded`, `saveLayout`, `saveAgentSeats`, `exportLayout`, `importLayout`, `settingsLoaded`, `setSoundEnabled`.
+**Extension ↔ Webview**: `postMessage` protocol. Key messages: `openClaude` (with optional `templateId`), `agentCreated/Closed`, `focusAgent`, `agentToolStart/Done/Clear`, `agentStatus`, `existingAgents`, `layoutLoaded`, `furnitureAssetsLoaded`, `floorTilesLoaded`, `wallTilesLoaded`, `saveLayout`, `saveAgentSeats`, `exportLayout`, `importLayout`, `settingsLoaded`, `setSoundEnabled`, `setNotificationPrefs`, `notificationPrefsLoaded`, `templatesLoaded`, `saveTemplate`, `deleteTemplate`.
 
-**One-agent-per-terminal**: Each "+ Agent" click → new terminal (`claude --session-id <uuid>`) → immediate agent creation → 1s poll for `<uuid>.jsonl` → file watching starts.
+**One-agent-per-terminal**: Each "+ Agent" click → template picker dropdown → selected template → new terminal (`claude --session-id <uuid> [--append-system-prompt '...'] [flags]`) → immediate agent creation → 1s poll for `<uuid>.jsonl` → file watching starts.
+
+**Agent Templates**: `agentTemplates.ts` defines 3 built-in templates: **Agile Workflow** (structured planning + iterative delivery prompt), **Code Review** (read-focused analysis prompt), **Quick Task** (vanilla, no extras). Custom templates require Premium; stored in `workspaceState` key `pixel-agents.templates`. `AgentTemplate` type: `{ id, name, description, builtIn?, cliFlags?, appendSystemPrompt?, palette?, cwd? }`. `buildClaudeCommand()` constructs the CLI invocation. Template picker replaces old "+ Agent" button behavior; multi-root workspaces show a 2-step flow (template → folder). Template management in Settings modal: list, create, edit, delete. `TemplateEditor.tsx` modal for creating/editing custom templates.
 
 **Terminal adoption**: Project-level 1s scan detects unknown JSONL files. If active terminal has no agent → adopt. If focused agent exists → reassign (`/clear` handling).
 
@@ -118,6 +122,8 @@ JSONL transcripts at `~/.claude/projects/<project-hash>/<session-id>.jsonl`. Pro
 **Speech bubbles**: Permission ("..." amber dots) stays until clicked/cleared. Waiting (green checkmark) auto-fades 2s. Sprites in `spriteData.ts`.
 
 **Sound notifications**: Ascending two-note chime (E5 → E6) via Web Audio API plays when waiting bubble appears (`agentStatus: 'waiting'`). `notificationSound.ts` manages AudioContext lifecycle; `unlockAudio()` called on canvas mousedown to ensure context is resumed (webviews start suspended). Toggled via "Sound Notifications" checkbox in Settings modal. Enabled by default; persisted in extension `globalState` key `pixel-agents.soundEnabled`, sent to webview as `settingsLoaded` on init.
+
+**Smart Notifications** (premium): OS-level alerts via `vscode.window.showWarningMessage`/`showInformationMessage`. Three types, each independently togglable in Settings modal: (1) **Permission Alerts** — fires when permission timer detects a stuck tool, with "Focus Terminal" action button. (2) **Long Task Complete** — fires on `turn_duration` if elapsed time since first tool > `LONG_TASK_THRESHOLD_MS` (2 min default). Tracks `turnStartTime` per agent, `longTaskNotified` prevents duplicates. (3) **Loop Detection** — tracks `recentToolNames` per agent; alerts when same tool appears `LOOP_DETECTION_COUNT` (5) times consecutively. `loopNotified` prevents duplicate alerts per streak. All state resets on new user prompt via `resetTurnNotificationState()`. Preferences stored in `globalState` key `pixel-agents.notificationPrefs` as `NotificationPrefs` object. `notificationManager.ts` handles all notification logic. `NotificationEvent` type flows through: `processTranscriptLine` → `readNewLines` → `startFileWatching` → `PixelAgentsViewProvider.handleNotification`. Settings UI toggles are greyed out for free users.
 
 **Seats**: Derived from chair furniture. `layoutToSeats()` creates a seat at every footprint tile of every chair. Multi-tile chairs (e.g. 2-tile couches) produce multiple seats keyed `uid` / `uid:1` / `uid:2`. Facing direction priority: 1) chair `orientation` from catalog (front→DOWN, back→UP, left→LEFT, right→RIGHT), 2) adjacent desk direction, 3) forward (DOWN). Click character → select (white outline) → click available seat → reassign.
 

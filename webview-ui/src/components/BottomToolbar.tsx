@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { SettingsModal } from './SettingsModal.js'
-import type { WorkspaceFolder, IdeType, LicenseState } from '../hooks/useExtensionMessages.js'
+import type { WorkspaceFolder, IdeType, LicenseState, NotificationPrefsState, AgentTemplateState } from '../hooks/useExtensionMessages.js'
 import { vscode } from '../vscodeApi.js'
 
 interface BottomToolbarProps {
@@ -14,6 +14,11 @@ interface BottomToolbarProps {
   license: LicenseState
   onSubmitLicense: (key: string) => void
   onClearLicense: () => void
+  notificationPrefs: NotificationPrefsState
+  onNotificationPrefsChange: (prefs: NotificationPrefsState) => void
+  templates: AgentTemplateState[]
+  onSaveTemplate: (template: AgentTemplateState) => void
+  onDeleteTemplate: (id: string) => void
 }
 
 const panelStyle: React.CSSProperties = {
@@ -47,6 +52,19 @@ const btnActive: React.CSSProperties = {
   border: '2px solid var(--pixel-accent)',
 }
 
+const dropdownItemStyle: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  textAlign: 'left',
+  padding: '6px 10px',
+  fontSize: '22px',
+  color: 'var(--pixel-text)',
+  background: 'transparent',
+  border: 'none',
+  borderRadius: 0,
+  cursor: 'pointer',
+}
+
 
 export function BottomToolbar({
   isEditMode,
@@ -59,43 +77,67 @@ export function BottomToolbar({
   license,
   onSubmitLicense,
   onClearLicense,
+  notificationPrefs,
+  onNotificationPrefsChange,
+  templates,
+  onSaveTemplate,
+  onDeleteTemplate,
 }: BottomToolbarProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isFolderPickerOpen, setIsFolderPickerOpen] = useState(false)
-  const [hoveredFolder, setHoveredFolder] = useState<number | null>(null)
-  const folderPickerRef = useRef<HTMLDivElement>(null)
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+  // For multi-root: after picking a template, show folder sub-picker
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null)
+  const pickerRef = useRef<HTMLDivElement>(null)
 
-  // Close folder picker on outside click
+  // Close picker on outside click
   useEffect(() => {
-    if (!isFolderPickerOpen) return
+    if (!isPickerOpen) return
     const handleClick = (e: MouseEvent) => {
-      if (folderPickerRef.current && !folderPickerRef.current.contains(e.target as Node)) {
-        setIsFolderPickerOpen(false)
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setIsPickerOpen(false)
+        setPendingTemplateId(null)
       }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
-  }, [isFolderPickerOpen])
+  }, [isPickerOpen])
 
   const hasMultipleFolders = workspaceFolders.length > 1
 
+  const launchWithTemplate = (templateId?: string, folderPath?: string) => {
+    setIsPickerOpen(false)
+    setPendingTemplateId(null)
+    vscode.postMessage({ type: 'openClaude', templateId, folderPath })
+  }
+
   const handleAgentClick = () => {
-    if (hasMultipleFolders) {
-      setIsFolderPickerOpen((v) => !v)
+    if (templates.length > 0) {
+      setIsPickerOpen((v) => !v)
+      setPendingTemplateId(null)
+    } else if (hasMultipleFolders) {
+      setIsPickerOpen((v) => !v)
+      setPendingTemplateId(null)
     } else {
       onOpenClaude()
     }
   }
 
-  const handleFolderSelect = (folder: WorkspaceFolder) => {
-    setIsFolderPickerOpen(false)
-    vscode.postMessage({ type: 'openClaude', folderPath: folder.path })
+  const handleTemplateSelect = (templateId: string) => {
+    if (hasMultipleFolders) {
+      setPendingTemplateId(templateId)
+    } else {
+      launchWithTemplate(templateId)
+    }
   }
+
+  // Show folder sub-picker when pendingTemplateId is set
+  const showFolderPicker = pendingTemplateId !== null && hasMultipleFolders
 
   return (
     <div style={panelStyle}>
-      <div ref={folderPickerRef} style={{ position: 'relative' }}>
+      <div ref={pickerRef} style={{ position: 'relative' }}>
         <button
           onClick={handleAgentClick}
           onMouseEnter={() => setHovered('agent')}
@@ -104,7 +146,7 @@ export function BottomToolbar({
             ...btnBase,
             padding: '5px 12px',
             background:
-              hovered === 'agent' || isFolderPickerOpen
+              hovered === 'agent' || isPickerOpen
                 ? 'var(--pixel-agent-hover-bg)'
                 : 'var(--pixel-agent-bg)',
             border: '2px solid var(--pixel-agent-border)',
@@ -113,7 +155,7 @@ export function BottomToolbar({
         >
           + Agent
         </button>
-        {isFolderPickerOpen && (
+        {isPickerOpen && !showFolderPicker && (
           <div
             style={{
               position: 'absolute',
@@ -124,33 +166,96 @@ export function BottomToolbar({
               border: '2px solid var(--pixel-border)',
               borderRadius: 0,
               boxShadow: 'var(--pixel-shadow)',
-              minWidth: 160,
+              minWidth: 220,
+              maxWidth: 300,
               zIndex: 'var(--pixel-controls-z)',
             }}
           >
-            {workspaceFolders.map((folder, i) => (
+            {templates.map((tmpl) => {
+              const isCustom = !tmpl.builtIn
+              const locked = isCustom && !license.isPremium
+              return (
+                <button
+                  key={tmpl.id}
+                  onClick={() => !locked && handleTemplateSelect(tmpl.id)}
+                  onMouseEnter={() => setHoveredItem(tmpl.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={{
+                    ...dropdownItemStyle,
+                    background: hoveredItem === tmpl.id ? 'var(--pixel-btn-hover-bg)' : 'transparent',
+                    opacity: locked ? 0.4 : 1,
+                    cursor: locked ? 'default' : 'pointer',
+                  }}
+                >
+                  <div style={{ fontSize: '22px' }}>
+                    {tmpl.name}
+                    {isCustom && (
+                      <span style={{ fontSize: '16px', color: 'rgba(90, 140, 255, 0.6)', marginLeft: 6 }}>
+                        {locked ? '(Premium)' : 'custom'}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '18px', color: 'rgba(255, 255, 255, 0.4)', marginTop: 1 }}>
+                    {tmpl.description}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {isPickerOpen && showFolderPicker && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: 0,
+              marginBottom: 4,
+              background: 'var(--pixel-bg)',
+              border: '2px solid var(--pixel-border)',
+              borderRadius: 0,
+              boxShadow: 'var(--pixel-shadow)',
+              minWidth: 180,
+              zIndex: 'var(--pixel-controls-z)',
+            }}
+          >
+            <div
+              style={{
+                padding: '4px 10px',
+                fontSize: '18px',
+                color: 'rgba(255, 255, 255, 0.4)',
+                borderBottom: '1px solid var(--pixel-border)',
+              }}
+            >
+              Select workspace folder:
+            </div>
+            {workspaceFolders.map((folder) => (
               <button
                 key={folder.path}
-                onClick={() => handleFolderSelect(folder)}
-                onMouseEnter={() => setHoveredFolder(i)}
-                onMouseLeave={() => setHoveredFolder(null)}
+                onClick={() => launchWithTemplate(pendingTemplateId ?? undefined, folder.path)}
+                onMouseEnter={() => setHoveredItem(`folder-${folder.path}`)}
+                onMouseLeave={() => setHoveredItem(null)}
                 style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '6px 10px',
-                  fontSize: '22px',
-                  color: 'var(--pixel-text)',
-                  background: hoveredFolder === i ? 'var(--pixel-btn-hover-bg)' : 'transparent',
-                  border: 'none',
-                  borderRadius: 0,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
+                  ...dropdownItemStyle,
+                  background: hoveredItem === `folder-${folder.path}` ? 'var(--pixel-btn-hover-bg)' : 'transparent',
                 }}
               >
                 {folder.name}
               </button>
             ))}
+            <button
+              onClick={() => setPendingTemplateId(null)}
+              onMouseEnter={() => setHoveredItem('back')}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={{
+                ...dropdownItemStyle,
+                fontSize: '20px',
+                color: 'rgba(255, 255, 255, 0.5)',
+                borderTop: '1px solid var(--pixel-border)',
+                background: hoveredItem === 'back' ? 'var(--pixel-btn-hover-bg)' : 'transparent',
+              }}
+            >
+              Back
+            </button>
           </div>
         )}
       </div>
@@ -196,6 +301,11 @@ export function BottomToolbar({
           license={license}
           onSubmitLicense={onSubmitLicense}
           onClearLicense={onClearLicense}
+          notificationPrefs={notificationPrefs}
+          onNotificationPrefsChange={onNotificationPrefsChange}
+          templates={templates}
+          onSaveTemplate={onSaveTemplate}
+          onDeleteTemplate={onDeleteTemplate}
         />
       </div>
     </div>

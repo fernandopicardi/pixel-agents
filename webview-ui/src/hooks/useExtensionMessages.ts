@@ -52,6 +52,23 @@ export interface LicenseState {
   validationError: string | null
 }
 
+export interface NotificationPrefsState {
+  permissionNotify: boolean
+  longTaskNotify: boolean
+  loopDetectionNotify: boolean
+}
+
+export interface AgentTemplateState {
+  id: string
+  name: string
+  description: string
+  builtIn?: boolean
+  cliFlags?: string
+  appendSystemPrompt?: string
+  palette?: number
+  cwd?: string
+}
+
 export interface ExtensionMessageState {
   agents: number[]
   selectedAgent: number | null
@@ -65,6 +82,8 @@ export interface ExtensionMessageState {
   workspaceFolders: WorkspaceFolder[]
   ideType: IdeType
   license: LicenseState
+  notificationPrefs: NotificationPrefsState
+  templates: AgentTemplateState[]
 }
 
 function saveAgentSeats(os: OfficeState): void {
@@ -93,6 +112,8 @@ export function useExtensionMessages(
   const [ideType, setIdeType] = useState<IdeType>('vscode')
   const [agentProgress, setAgentProgress] = useState<Record<number, AgentProgress>>({})
   const [license, setLicense] = useState<LicenseState>({ isPremium: false, licenseKey: null, validationError: null })
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefsState>({ permissionNotify: true, longTaskNotify: true, loopDetectionNotify: true })
+  const [templates, setTemplates] = useState<AgentTemplateState[]>([])
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
   const layoutReadyRef = useRef(false)
@@ -133,9 +154,10 @@ export function useExtensionMessages(
       } else if (msg.type === 'agentCreated') {
         const id = msg.id as number
         const folderName = msg.folderName as string | undefined
+        const templatePalette = msg.palette as number | undefined
         setAgents((prev) => (prev.includes(id) ? prev : [...prev, id]))
         setSelectedAgent(id)
-        os.addAgent(id, undefined, undefined, undefined, undefined, folderName)
+        os.addAgent(id, templatePalette, undefined, undefined, undefined, folderName)
         saveAgentSeats(os)
       } else if (msg.type === 'agentClosed') {
         const id = msg.id as number
@@ -384,6 +406,11 @@ export function useExtensionMessages(
           licenseKey: (msg.licenseKey as string | null) ?? null,
           validationError: (msg.validationError as string | null) ?? null,
         })
+      } else if (msg.type === 'notificationPrefsLoaded') {
+        const prefs = msg.prefs as NotificationPrefsState
+        setNotificationPrefs(prefs)
+      } else if (msg.type === 'templatesLoaded') {
+        setTemplates(msg.templates as AgentTemplateState[])
       } else if (msg.type === 'furnitureAssetsLoaded') {
         try {
           const catalog = msg.catalog as FurnitureAsset[]
@@ -402,5 +429,5 @@ export function useExtensionMessages(
     return () => window.removeEventListener('message', handler)
   }, [getOfficeState])
 
-  return { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license }
+  return { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license, notificationPrefs, templates }
 }

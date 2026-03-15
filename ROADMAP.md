@@ -16,8 +16,8 @@
 | # | Feature | Epic | Complexity | Status | Sprint |
 |---|---------|------|-----------|--------|--------|
 | F01 | Agent Hover Tooltip | Agent UX | XS | `done` | Sprint 1 |
-| F02 | Smart Notifications | Agent UX | S | `backlog` | — |
-| F03 | Agent Templates / Presets | Agent Config | S | `backlog` | — |
+| F02 | Smart Notifications | Agent UX | S | `done` | Sprint 1 |
+| F03 | Agent Templates / Presets | Agent Config | S | `done` | Sprint 2 |
 | F04 | Activity Timeline | Analytics | M | `backlog` | — |
 | F05 | Agent Dashboard (metrics) | Analytics | M | `backlog` | — |
 | F06 | Cost Budget & Guardrails | Analytics | M | `backlog` | — |
@@ -82,7 +82,7 @@ When hovering over an agent character in the office, show a tooltip with:
 
 **Epic:** Agent UX
 **Complexity:** S
-**Status:** `backlog`
+**Status:** `done`
 **Branch:** `feat/smart-notifications`
 
 ### Description
@@ -93,12 +93,12 @@ Enhanced notification system beyond the current chime:
 - Configurable notification preferences in Settings modal
 
 ### Acceptance Criteria
-- [ ] OS-level notifications via `vscode.window.showInformationMessage` for permission waits
-- [ ] Long-task completion notification (configurable threshold, default 2 min)
-- [ ] Loop detection: alert when same tool_use name appears 5+ times consecutively
-- [ ] Settings UI: toggle each notification type independently
-- [ ] Notifications respect system DND / focus mode
-- [ ] Sound notification setting still works independently
+- [x] OS-level notifications via `vscode.window.showWarningMessage` for permission waits
+- [x] Long-task completion notification (2 min threshold)
+- [x] Loop detection: alert when same tool_use name appears 5+ times consecutively
+- [x] Settings UI: toggle each notification type independently
+- [x] Notifications respect system DND / focus mode (VS Code handles this natively)
+- [x] Sound notification setting still works independently
 
 ### Technical Notes
 - Use `vscode.window.showInformationMessage` for native notifications (works cross-platform)
@@ -115,7 +115,18 @@ Enhanced notification system beyond the current chime:
 - `webview-ui/src/components/SettingsModal.tsx` — notification toggles UI
 
 ### Implementation Notes
-_To be filled during/after implementation_
+- New `src/notificationManager.ts` module handles all notification logic: prefs read/write, permission/long-task/loop alerts
+- `NotificationPrefs` stored in `globalState` key `pixel-agents.notificationPrefs` (defaults: all enabled)
+- Permission wait: `vscode.window.showWarningMessage` with "Focus Terminal" action button
+- Long-task detection: `turnStartTime` tracked per agent, fires when turn_duration arrives and elapsed > 2min threshold
+- Loop detection: `recentToolNames` array tracks consecutive tool names; alerts when same tool appears 5+ times in a row
+- `loopNotified` flag prevents duplicate loop alerts per streak; resets on new user prompt
+- `NotificationEvent` type flows from `processTranscriptLine` → `readNewLines` → `startFileWatching` → `PixelAgentsViewProvider.handleNotification`
+- Permission notification triggered via `onPermissionDetected` callback passed through `startPermissionTimer`
+- Settings UI: 3 toggles in SettingsModal (Permission Alerts, Long Task Complete, Loop Detection) — greyed out for free users
+- All notifications gated behind `isPremium()` check in notificationManager
+- Sound notifications remain independent (unchanged)
+- `notificationPrefsLoaded` message syncs prefs from extension to webview on init and on change
 
 ---
 
@@ -123,7 +134,7 @@ _To be filled during/after implementation_
 
 **Epic:** Agent Config
 **Complexity:** S
-**Status:** `backlog`
+**Status:** `done`
 **Branch:** `feat/agent-templates`
 
 ### Description
@@ -135,13 +146,13 @@ Define reusable agent configurations before launching:
 - Save/load templates per workspace
 
 ### Acceptance Criteria
-- [ ] "New Agent" button opens template picker (or quick-launch with default)
-- [ ] Template editor modal: name, directory, CLI flags, palette selection
-- [ ] Templates saved per workspace in `workspaceState`
-- [ ] Template list in Settings modal with create/edit/delete
-- [ ] Character spawns with pre-assigned name, palette, and seat preference
-- [ ] Terminal starts with configured CLI flags
-- [ ] Import/export templates as JSON
+- [x] "New Agent" button opens template picker with built-in and custom templates
+- [x] Template editor modal: name, description, system prompt, CLI flags, palette selection
+- [x] Templates saved per workspace in `workspaceState`
+- [x] Template list in Settings modal with create/edit/delete (custom templates)
+- [x] Character spawns with pre-assigned palette from template
+- [x] Terminal starts with configured CLI flags and --append-system-prompt
+- [ ] Import/export templates as JSON (deferred to future sprint)
 
 ### Technical Notes
 - Store templates in `workspaceState` key `pixel-agents.templates`
@@ -159,7 +170,23 @@ Define reusable agent configurations before launching:
 - New: `webview-ui/src/components/TemplateEditor.tsx`
 
 ### Implementation Notes
-_To be filled during/after implementation_
+- New `src/agentTemplates.ts` module: built-in templates registry + CRUD for custom templates
+- 3 built-in templates ship with the extension:
+  - **Agile Workflow** — `--append-system-prompt` with structured agile practices (plan, iterate, summarize)
+  - **Code Review** — read-focused agent with review structure instructions
+  - **Quick Task** — vanilla Claude Code with no extra prompts
+- `AgentTemplate` interface: `id, name, description, builtIn?, cliFlags?, appendSystemPrompt?, palette?, cwd?`
+- `buildClaudeCommand()` helper builds `claude --session-id <id> [--append-system-prompt '...'] [flags]`
+- Terminal names include template: `Claude Code #N (Agile Workflow)`
+- Template picker dropdown appears on "+ Agent" click, replacing old folder-only picker
+- Multi-root: after template selection, shows folder sub-picker (2-step flow with Back button)
+- Custom templates require Premium license; built-in templates available to all users
+- Template management in Settings modal: list all templates, Edit/Delete buttons on custom ones, "+ New" button
+- `TemplateEditor.tsx`: modal with name, description, system prompt (textarea), CLI flags, palette picker (6 swatches + Auto)
+- Templates persisted in `workspaceState` key `pixel-agents.templates`
+- Messages: `templatesLoaded`, `saveTemplate`, `deleteTemplate`; `openClaude` now accepts `templateId`
+- `PersistedAgent` stores `templateId` for future restore reference
+- `AgentState` stores `templateId` + `templateName` for runtime display
 
 ---
 
@@ -511,9 +538,9 @@ _To be filled during/after implementation_
 
 ### Sprint 1 — Agent UX Foundations
 **Goal:** Implement F01 (Tooltip) and F02 (Notifications)
-**Status:** `in_progress`
+**Status:** `done`
 **Start date:** 2026-03-15
-**End date:** —
+**End date:** 2026-03-15
 
 | Task | Feature | Status | Notes |
 |------|---------|--------|-------|
@@ -521,14 +548,16 @@ _To be filled during/after implementation_
 | Extract current task from JSONL | F01 | `done` | Uses existing agentTools status |
 | Progress estimation logic | F01 | `done` | Logarithmic curve on turnToolCount |
 | Sub-agent tooltip support | F01 | `done` | Shows sub label, no progress bar |
-| OS notification for permission wait | F02 | `todo` | |
-| Long-task completion notification | F02 | `todo` | |
-| Loop detection alert | F02 | `todo` | |
-| Notification settings UI | F02 | `todo` | |
+| OS notification for permission wait | F02 | `done` | vscode.window.showWarningMessage + Focus Terminal |
+| Long-task completion notification | F02 | `done` | turnStartTime tracking, 2min threshold |
+| Loop detection alert | F02 | `done` | recentToolNames streak of 5+ |
+| Notification settings UI | F02 | `done` | 3 toggles in SettingsModal, premium-gated |
 
 ### Sprint 2 — Agent Config
 **Goal:** Implement F03 (Templates)
-**Status:** `not_started`
+**Status:** `done`
+**Start date:** 2026-03-15
+**End date:** 2026-03-15
 
 ### Sprint 3 — Analytics Core
 **Goal:** Implement F04 (Timeline) and F05 (Dashboard)
@@ -559,3 +588,5 @@ _To be filled during/after implementation_
 | 2026-03-15 | Initial roadmap created with 11 features across 7 sprints | Claude + Fernando |
 | 2026-03-15 | Cursor IDE support + auto-adopt terminals (v1.1.0) shipped | Claude + Fernando |
 | 2026-03-15 | F01 Agent Hover Tooltip implemented (Sprint 1 started) | Claude + Fernando |
+| 2026-03-15 | F02 Smart Notifications implemented (Sprint 1 complete) | Claude + Fernando |
+| 2026-03-15 | F03 Agent Templates implemented with built-in Agile Workflow (Sprint 2 complete) | Claude + Fernando |

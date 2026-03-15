@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import type { AgentState } from './types.js';
 import { cancelWaitingTimer, cancelPermissionTimer, clearAgentActivity } from './timerManager.js';
 import { processTranscriptLine } from './transcriptParser.js';
+import type { NotificationEvent } from './transcriptParser.js';
 import { FILE_WATCHER_POLL_INTERVAL_MS, PROJECT_SCAN_INTERVAL_MS } from './constants.js';
 
 export function startFileWatching(
@@ -15,11 +16,12 @@ export function startFileWatching(
 	waitingTimers: Map<number, ReturnType<typeof setTimeout>>,
 	permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
 	webview: vscode.Webview | undefined,
+	onNotification?: (event: NotificationEvent) => void,
 ): void {
 	// Primary: fs.watch (unreliable on macOS — may miss events)
 	try {
 		const watcher = fs.watch(filePath, () => {
-			readNewLines(agentId, agents, waitingTimers, permissionTimers, webview);
+			readNewLines(agentId, agents, waitingTimers, permissionTimers, webview, onNotification);
 		});
 		fileWatchers.set(agentId, watcher);
 	} catch (e) {
@@ -29,7 +31,7 @@ export function startFileWatching(
 	// Secondary: fs.watchFile (stat-based polling, reliable on macOS)
 	try {
 		fs.watchFile(filePath, { interval: FILE_WATCHER_POLL_INTERVAL_MS }, () => {
-			readNewLines(agentId, agents, waitingTimers, permissionTimers, webview);
+			readNewLines(agentId, agents, waitingTimers, permissionTimers, webview, onNotification);
 		});
 	} catch (e) {
 		console.log(`[Pixel Agents] fs.watchFile failed for agent ${agentId}: ${e}`);
@@ -42,7 +44,7 @@ export function startFileWatching(
 			try { fs.unwatchFile(filePath); } catch { /* ignore */ }
 			return;
 		}
-		readNewLines(agentId, agents, waitingTimers, permissionTimers, webview);
+		readNewLines(agentId, agents, waitingTimers, permissionTimers, webview, onNotification);
 	}, FILE_WATCHER_POLL_INTERVAL_MS);
 	pollingTimers.set(agentId, interval);
 }
@@ -53,6 +55,7 @@ export function readNewLines(
 	waitingTimers: Map<number, ReturnType<typeof setTimeout>>,
 	permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
 	webview: vscode.Webview | undefined,
+	onNotification?: (event: NotificationEvent) => void,
 ): void {
 	const agent = agents.get(agentId);
 	if (!agent) return;
@@ -83,7 +86,7 @@ export function readNewLines(
 
 		for (const line of lines) {
 			if (!line.trim()) continue;
-			processTranscriptLine(agentId, line, agents, waitingTimers, permissionTimers, webview);
+			processTranscriptLine(agentId, line, agents, waitingTimers, permissionTimers, webview, onNotification);
 		}
 	} catch (e) {
 		console.log(`[Pixel Agents] Read error for agent ${agentId}: ${e}`);
@@ -211,6 +214,10 @@ function adoptTerminalForFile(
 		permissionSent: false,
 		hadToolsInTurn: false,
 		turnToolCount: 0,
+		turnStartTime: null,
+		longTaskNotified: false,
+		recentToolNames: [],
+		loopNotified: false,
 	};
 
 	agents.set(id, agent);

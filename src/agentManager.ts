@@ -2,11 +2,29 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as vscode from 'vscode';
-import type { AgentState, PersistedAgent } from './types.js';
+import type { AgentState, PersistedAgent, AgentTemplate } from './types.js';
 import { cancelWaitingTimer, cancelPermissionTimer } from './timerManager.js';
 import { startFileWatching, readNewLines, ensureProjectScan } from './fileWatcher.js';
+import type { NotificationEvent } from './transcriptParser.js';
 import { JSONL_POLL_INTERVAL_MS, TERMINAL_NAME_PREFIX, WORKSPACE_KEY_AGENTS, WORKSPACE_KEY_AGENT_SEATS } from './constants.js';
 import { migrateAndLoadLayout } from './layoutPersistence.js';
+
+/** Build the `claude` CLI command with session ID and optional template flags */
+function buildClaudeCommand(sessionId: string, template?: AgentTemplate): string {
+	const parts = ['claude', '--session-id', sessionId];
+
+	if (template?.appendSystemPrompt) {
+		// Escape single quotes for shell
+		const escaped = template.appendSystemPrompt.replace(/'/g, "'\\''");
+		parts.push('--append-system-prompt', `'${escaped}'`);
+	}
+
+	if (template?.cliFlags) {
+		parts.push(template.cliFlags);
+	}
+
+	return parts.join(' ');
+}
 
 export function getProjectDirPath(cwd?: string): string | null {
 	const workspacePath = cwd || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -32,19 +50,24 @@ export async function launchNewTerminal(
 	webview: vscode.Webview | undefined,
 	persistAgents: () => void,
 	folderPath?: string,
+	onNotification?: (event: NotificationEvent) => void,
+	template?: AgentTemplate,
 ): Promise<void> {
 	const folders = vscode.workspace.workspaceFolders;
-	const cwd = folderPath || folders?.[0]?.uri.fsPath;
+	const cwd = template?.cwd || folderPath || folders?.[0]?.uri.fsPath;
 	const isMultiRoot = !!(folders && folders.length > 1);
 	const idx = nextTerminalIndexRef.current++;
+	const terminalName = template?.name
+		? `${TERMINAL_NAME_PREFIX} #${idx} (${template.name})`
+		: `${TERMINAL_NAME_PREFIX} #${idx}`;
 	const terminal = vscode.window.createTerminal({
-		name: `${TERMINAL_NAME_PREFIX} #${idx}`,
+		name: terminalName,
 		cwd,
 	});
 	terminal.show();
 
 	const sessionId = crypto.randomUUID();
-	terminal.sendText(`claude --session-id ${sessionId}`);
+	terminal.sendText(buildClaudeCommand(sessionId, template));
 
 	const projectDir = getProjectDirPath(cwd);
 	if (!projectDir) {
@@ -76,13 +99,25 @@ export async function launchNewTerminal(
 		hadToolsInTurn: false,
 		turnToolCount: 0,
 		folderName,
+		turnStartTime: null,
+		longTaskNotified: false,
+		recentToolNames: [],
+		loopNotified: false,
+		templateId: template?.id,
+		templateName: template?.name,
 	};
 
 	agents.set(id, agent);
 	activeAgentIdRef.current = id;
 	persistAgents();
-	console.log(`[Pixel Agents] Agent ${id}: created for terminal ${terminal.name}`);
-	webview?.postMessage({ type: 'agentCreated', id, folderName });
+	console.log(`[Pixel Agents] Agent ${id}: created for terminal ${terminal.name}${template ? ` (template: ${template.name})` : ''}`);
+	webview?.postMessage({
+		type: 'agentCreated',
+		id,
+		folderName,
+		templateName: template?.name,
+		palette: template?.palette,
+	});
 
 	ensureProjectScan(
 		projectDir, knownJsonlFiles, projectScanTimerRef, activeAgentIdRef,
@@ -97,8 +132,8 @@ export async function launchNewTerminal(
 				console.log(`[Pixel Agents] Agent ${id}: found JSONL file ${path.basename(agent.jsonlFile)}`);
 				clearInterval(pollTimer);
 				jsonlPollTimers.delete(id);
-				startFileWatching(id, agent.jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview);
-				readNewLines(id, agents, waitingTimers, permissionTimers, webview);
+				startFileWatching(id, agent.jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview, onNotification);
+				readNewLines(id, agents, waitingTimers, permissionTimers, webview, onNotification);
 			}
 		} catch { /* file may not exist yet */ }
 	}, JSONL_POLL_INTERVAL_MS);
@@ -152,6 +187,7 @@ export function persistAgents(
 			jsonlFile: agent.jsonlFile,
 			projectDir: agent.projectDir,
 			folderName: agent.folderName,
+			templateId: agent.templateId,
 		});
 	}
 	context.workspaceState.update(WORKSPACE_KEY_AGENTS, persisted);
@@ -172,6 +208,7 @@ export function restoreAgents(
 	activeAgentIdRef: { current: number | null },
 	webview: vscode.Webview | undefined,
 	doPersist: () => void,
+	onNotification?: (event: NotificationEvent) => void,
 ): void {
 	const persisted = context.workspaceState.get<PersistedAgent[]>(WORKSPACE_KEY_AGENTS, []);
 	if (persisted.length === 0) return;
@@ -202,6 +239,10 @@ export function restoreAgents(
 			hadToolsInTurn: false,
 			turnToolCount: 0,
 			folderName: p.folderName,
+			turnStartTime: null,
+			longTaskNotified: false,
+			recentToolNames: [],
+			loopNotified: false,
 		};
 
 		agents.set(p.id, agent);
@@ -223,7 +264,7 @@ export function restoreAgents(
 			if (fs.existsSync(p.jsonlFile)) {
 				const stat = fs.statSync(p.jsonlFile);
 				agent.fileOffset = stat.size;
-				startFileWatching(p.id, p.jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview);
+				startFileWatching(p.id, p.jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview, onNotification);
 			} else {
 				// Poll for the file to appear
 				const pollTimer = setInterval(() => {
@@ -234,7 +275,7 @@ export function restoreAgents(
 							jsonlPollTimers.delete(p.id);
 							const stat = fs.statSync(agent.jsonlFile);
 							agent.fileOffset = stat.size;
-							startFileWatching(p.id, agent.jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview);
+							startFileWatching(p.id, agent.jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview, onNotification);
 						}
 					} catch { /* file may not exist yet */ }
 				}, JSONL_POLL_INTERVAL_MS);
@@ -289,6 +330,7 @@ export function adoptExistingTerminals(
 	permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
 	webview: vscode.Webview | undefined,
 	persistAgents: () => void,
+	onNotification?: (event: NotificationEvent) => void,
 ): void {
 	const projectDir = getProjectDirPath();
 	if (!projectDir) return;
@@ -378,6 +420,10 @@ export function adoptExistingTerminals(
 			permissionSent: false,
 			hadToolsInTurn: false,
 			turnToolCount: 0,
+			turnStartTime: null,
+			longTaskNotified: false,
+			recentToolNames: [],
+			loopNotified: false,
 		};
 
 		agents.set(id, agent);
@@ -391,7 +437,7 @@ export function adoptExistingTerminals(
 			if (fs.existsSync(jsonl.file)) {
 				const stat = fs.statSync(jsonl.file);
 				agent.fileOffset = stat.size;
-				startFileWatching(id, jsonl.file, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview);
+				startFileWatching(id, jsonl.file, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview, onNotification);
 			}
 		} catch { /* ignore */ }
 

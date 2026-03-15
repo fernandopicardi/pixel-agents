@@ -121,7 +121,7 @@ function App() {
 
   const isEditDirty = useCallback(() => editor.isEditMode && editor.isDirty, [editor.isEditMode, editor.isDirty])
 
-  const { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty)
+  const { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license, notificationPrefs, templates } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty)
 
   const handleSubmitLicense = useCallback((key: string) => {
     vscode.postMessage({ type: 'setLicenseKey', key })
@@ -129,6 +129,18 @@ function App() {
 
   const handleClearLicense = useCallback(() => {
     vscode.postMessage({ type: 'clearLicenseKey' })
+  }, [])
+
+  const handleNotificationPrefsChange = useCallback((prefs: typeof notificationPrefs) => {
+    vscode.postMessage({ type: 'setNotificationPrefs', prefs })
+  }, [])
+
+  const handleSaveTemplate = useCallback((template: typeof templates[0]) => {
+    vscode.postMessage({ type: 'saveTemplate', template })
+  }, [])
+
+  const handleDeleteTemplate = useCallback((id: string) => {
+    vscode.postMessage({ type: 'deleteTemplate', templateId: id })
   }, [])
 
   const [isDebugMode, setIsDebugMode] = useState(false)
@@ -242,6 +254,11 @@ function App() {
         license={license}
         onSubmitLicense={handleSubmitLicense}
         onClearLicense={handleClearLicense}
+        notificationPrefs={notificationPrefs}
+        onNotificationPrefsChange={handleNotificationPrefsChange}
+        templates={templates}
+        onSaveTemplate={handleSaveTemplate}
+        onDeleteTemplate={handleDeleteTemplate}
       />
 
       {editor.isEditMode && editor.isDirty && (
