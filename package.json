@@ -1,7 +1,7 @@
 {
   "name": "agent-craft",
   "displayName": "AgentCraft",
-  "description": "Pixel art office where your Claude Code agents come to life as animated characters — works in VS Code and Cursor IDE",
+  "description": "Watch your AI agents work in a virtual pixel art office — real-time activity tracking, team orchestration, performance scoring, and smart notifications for Claude Code",
   "version": "2.0.0",
   "publisher": "fernandopicardi",
   "repository": {
@@ -18,13 +18,16 @@
     "Visualization"
   ],
   "keywords": [
-    "pixel-art",
-    "claude",
+    "agent-craft",
+    "claude-code",
     "ai-agents",
+    "agent-monitoring",
     "cursor",
     "cursor-ide",
     "vscode",
-    "claude-code"
+    "pixel-art",
+    "orchestration",
+    "developer-tools"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
