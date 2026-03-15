@@ -25,6 +25,8 @@ interface BottomToolbarProps {
   onToggleOrch: () => void
   isPerfOpen: boolean
   onTogglePerf: () => void
+  isTasksOpen: boolean
+  onToggleTasks: () => void
 }
 
 const panelStyle: React.CSSProperties = {
@@ -94,6 +96,8 @@ export function BottomToolbar({
   onToggleOrch,
   isPerfOpen,
   onTogglePerf,
+  isTasksOpen,
+  onToggleTasks,
 }: BottomToolbarProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -324,6 +328,24 @@ export function BottomToolbar({
         title="Performance Scores"
       >
         Score
+      </button>
+      <button
+        onClick={onToggleTasks}
+        onMouseEnter={() => setHovered('tasks')}
+        onMouseLeave={() => setHovered(null)}
+        style={
+          isTasksOpen
+            ? { ...btnActive, fontSize: '20px', padding: '5px 8px' }
+            : {
+                ...btnBase,
+                fontSize: '20px',
+                padding: '5px 8px',
+                background: hovered === 'tasks' ? 'var(--pixel-btn-hover-bg)' : btnBase.background,
+              }
+        }
+        title="Active Tasks"
+      >
+        Tasks
       </button>
       <button
         onClick={onToggleEditMode}

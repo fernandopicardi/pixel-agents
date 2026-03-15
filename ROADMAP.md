@@ -30,7 +30,7 @@
 | F11 | Project Map View            | Visualization | XL         | `backlog` | —        |
 | F12 | Sub-agent Recreation Room   | Agent UX      | M          | `done`    | Sprint 8 |
 | F13 | Session History Board       | Analytics     | M          | `backlog` | —        |
-| F14 | Active Tasks Panel          | Agent UX      | S          | `backlog` | —        |
+| F14 | Active Tasks Panel          | Agent UX      | S          | `done`    | Sprint 8 |
 
 
 **Status values:** `backlog` → `in_progress` → `review` → `done`

@@ -11,6 +11,7 @@ import { useExtensionMessages } from './hooks/useExtensionMessages.js'
 import { FileHeatmap } from './components/FileHeatmap.js'
 import { OrchestrationPanel } from './components/OrchestrationPanel.js'
 import { PerformanceCard } from './components/PerformanceCard.js'
+import { ActiveTasksPanel } from './components/ActiveTasksPanel.js'
 import { PULSE_ANIMATION_DURATION_SEC } from './constants.js'
 import { useEditorActions } from './hooks/useEditorActions.js'
 import { useEditorKeyboard } from './hooks/useEditorKeyboard.js'
@@ -150,6 +151,7 @@ function App() {
   const [isHeatmapOpen, setIsHeatmapOpen] = useState(false)
   const [isOrchOpen, setIsOrchOpen] = useState(false)
   const [isPerfOpen, setIsPerfOpen] = useState(false)
+  const [isTasksOpen, setIsTasksOpen] = useState(false)
 
   const handleToggleDebugMode = useCallback(() => setIsDebugMode((prev) => !prev), [])
 
@@ -271,6 +273,8 @@ function App() {
         onToggleOrch={() => setIsOrchOpen(v => !v)}
         isPerfOpen={isPerfOpen}
         onTogglePerf={() => setIsPerfOpen(v => !v)}
+        isTasksOpen={isTasksOpen}
+        onToggleTasks={() => setIsTasksOpen(v => !v)}
       />
 
       {editor.isEditMode && editor.isDirty && (
@@ -365,6 +369,19 @@ function App() {
         agentScores={agentScores}
         agents={agents}
         isPremium={license.isPremium}
+      />
+
+      <ActiveTasksPanel
+        isOpen={isTasksOpen}
+        onClose={() => setIsTasksOpen(false)}
+        agents={agents}
+        agentTools={agentTools}
+        agentStatuses={agentStatuses}
+        agentLastActivity={agentLastActivity}
+        subagentTools={subagentTools}
+        subagentCharacters={subagentCharacters}
+        isPremium={license.isPremium}
+        onFocusAgent={handleSelectAgent}
       />
 
       {isDebugMode && (
