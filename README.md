@@ -1,10 +1,10 @@
 # Pixel Agents
 
-A VS Code extension that turns your AI coding agents into animated pixel art characters in a virtual office.
+A VS Code / Cursor IDE extension that turns your AI coding agents into animated pixel art characters in a virtual office.
 
 Each Claude Code terminal you open spawns a character that walks around, sits at desks, and visually reflects what the agent is doing — typing when writing code, reading when searching files, waiting when it needs your attention.
 
-This is the source code for the free [Pixel Agents extension for VS Code](https://marketplace.visualstudio.com/items?itemName=pablodelucca.pixel-agents) — you can install it directly from the marketplace with the full furniture catalog included.
+This is the source code for the free [Pixel Agents extension for VS Code](https://marketplace.visualstudio.com/items?itemName=pablodelucca.pixel-agents) — you can install it directly from the marketplace with the full furniture catalog included. It also works on **Cursor IDE** (see installation instructions below).
 
 
 ![Pixel Agents screenshot](webview-ui/public/Screenshot.jpg)
@@ -17,8 +17,9 @@ This is the source code for the free [Pixel Agents extension for VS Code](https:
 - **Speech bubbles** — visual indicators when an agent is waiting for input or needs permission
 - **Sound notifications** — optional chime when an agent finishes its turn
 - **Sub-agent visualization** — Task tool sub-agents spawn as separate characters linked to their parent
-- **Persistent layouts** — your office design is saved and shared across VS Code windows
+- **Persistent layouts** — your office design is saved and shared across windows
 - **Diverse characters** — 6 diverse characters. These are based on the amazing work of [JIK-A-4, Metro City](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack).
+- **Multi-IDE support** — works in both VS Code and Cursor IDE
 
 <p align="center">
   <img src="webview-ui/public/characters.png" alt="Pixel Agents characters" width="320" height="72" style="image-rendering: pixelated;">
@@ -26,14 +27,43 @@ This is the source code for the free [Pixel Agents extension for VS Code](https:
 
 ## Requirements
 
-- VS Code 1.109.0 or later
+- **VS Code 1.85.0+** or **Cursor IDE** (any recent version)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
 
 ## Getting Started
 
-If you just want to use Pixel Agents, the easiest way is to download the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=pablodelucca.pixel-agents). If you want to play with the code, develop, or contribute, then:
+### Option 1 — Install from VS Code Marketplace
 
-### Install from source
+If you use VS Code, the easiest way is to download the [Pixel Agents extension](https://marketplace.visualstudio.com/items?itemName=pablodelucca.pixel-agents) directly from the marketplace.
+
+### Option 2 — Install on Cursor IDE
+
+Cursor IDE is a fork of VS Code and does not have access to the VS Code Marketplace. You need to install the extension manually via a `.vsix` file. There are three ways to do this:
+
+#### Method A — Command Palette (recommended)
+
+1. Open Cursor IDE
+2. Open the **Command Palette** with `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
+3. Type **`Extensions: Install from VSIX...`** and select it
+4. Navigate to the `.vsix` file and select it
+5. Restart Cursor when prompted
+
+#### Method B — Command Line
+
+```bash
+cursor --install-extension pixel-agents-1.0.2.vsix
+```
+
+#### Method C — Drag and Drop
+
+1. Open the **Extensions** panel in Cursor (`Ctrl+Shift+X`)
+2. Drag the `.vsix` file from your file explorer and drop it directly into the Extensions panel
+
+> **Note:** Manually installed extensions do not auto-update. You will need to repeat this process when new versions are released.
+
+### Option 3 — Build from source
+
+If you want to play with the code, develop, or contribute:
 
 ```bash
 git clone https://github.com/pablodelucca/pixel-agents.git
@@ -43,7 +73,15 @@ cd webview-ui && npm install && cd ..
 npm run build
 ```
 
-Then press **F5** in VS Code to launch the Extension Development Host.
+**For VS Code development:** press **F5** to launch the Extension Development Host.
+
+**To generate a `.vsix` for Cursor (or manual VS Code install):**
+
+```bash
+npx @vscode/vsce package --allow-missing-repository
+```
+
+This creates a `pixel-agents-x.x.x.vsix` file in the project root. Then install it using any of the methods described in Option 2 above.
 
 ### Usage
 
@@ -52,6 +90,7 @@ Then press **F5** in VS Code to launch the Extension Development Host.
 3. Start coding with Claude — watch the character react in real time
 4. Click a character to select it, then click a seat to reassign it
 5. Click **Layout** to open the office editor and customize your space
+6. Open **Settings** to see which IDE you're running in (VS Code or Cursor)
 
 ## Layout Editor
 
@@ -87,14 +126,16 @@ The webview runs a lightweight game loop with canvas rendering, BFS pathfinding,
 
 ## Tech Stack
 
-- **Extension**: TypeScript, VS Code Webview API, esbuild
+- **Extension**: TypeScript, VS Code / Cursor Webview API, esbuild
 - **Webview**: React 19, TypeScript, Vite, Canvas 2D
+- **Compatibility**: VS Code 1.85.0+, Cursor IDE
 
 ## Known Limitations
 
 - **Agent-terminal sync** — the way agents are connected to Claude Code terminal instances is not super robust and sometimes desyncs, especially when terminals are rapidly opened/closed or restored across sessions.
 - **Heuristic-based status detection** — Claude Code's JSONL transcript format does not provide clear signals for when an agent is waiting for user input or when it has finished its turn. The current detection is based on heuristics (idle timers, turn-duration events) and often misfires — agents may briefly show the wrong status or miss transitions.
 - **Windows-only testing** — the extension has only been tested on Windows 11. It may work on macOS or Linux, but there could be unexpected issues with file watching, paths, or terminal behavior on those platforms.
+- **Cursor IDE** — while the extension is compatible with Cursor, it has not been extensively tested there. If you find issues specific to Cursor, please open an issue.
 
 ## Roadmap
 

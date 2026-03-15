@@ -262,6 +262,145 @@ export function restoreAgents(
 	}
 }
 
+/**
+ * Detect and adopt existing Claude Code terminals that were opened before the extension started.
+ *
+ * Strategy:
+ * 1. Find JSONL files in the CURRENT project dir that are actively being written to (last 10 min)
+ * 2. Find unowned terminals whose name matches Claude Code patterns
+ * 3. Only adopt if the count of active JSONL files matches the count of candidate terminals
+ *    (avoids cross-project mismatches when multiple projects are open)
+ * 4. If counts don't match, still adopt up to min(terminals, files) but log a warning
+ *
+ * The JSONL directory is already scoped to the current workspace:
+ *   ~/.claude/projects/<workspace-hash>/
+ * So files from other projects are never considered.
+ */
+export function adoptExistingTerminals(
+	nextAgentIdRef: { current: number },
+	agents: Map<number, AgentState>,
+	activeAgentIdRef: { current: number | null },
+	knownJsonlFiles: Set<string>,
+	fileWatchers: Map<number, fs.FSWatcher>,
+	pollingTimers: Map<number, ReturnType<typeof setInterval>>,
+	waitingTimers: Map<number, ReturnType<typeof setTimeout>>,
+	permissionTimers: Map<number, ReturnType<typeof setTimeout>>,
+	webview: vscode.Webview | undefined,
+	persistAgents: () => void,
+): void {
+	const projectDir = getProjectDirPath();
+	if (!projectDir) return;
+
+	// Gather terminal refs and JSONL files already owned by existing agents
+	const ownedTerminals = new Set<vscode.Terminal>();
+	const ownedJsonlFiles = new Set<string>();
+	for (const agent of agents.values()) {
+		ownedTerminals.add(agent.terminalRef);
+		ownedJsonlFiles.add(agent.jsonlFile);
+	}
+
+	// Find unowned terminals whose name matches Claude Code patterns
+	// Patterns: "Claude Code #N" (Pixel Agents), "claude" (default CLI), "Claude Code" (generic)
+	const candidateTerminals = vscode.window.terminals.filter(t => {
+		if (ownedTerminals.has(t)) return false;
+		const name = t.name.toLowerCase();
+		return name.includes('claude');
+	});
+
+	if (candidateTerminals.length === 0) {
+		console.log('[Pixel Agents] adoptExistingTerminals: no unowned Claude Code terminals found');
+		return;
+	}
+
+	// Get JSONL files in THIS project dir, sorted by modification time (most recent first)
+	let jsonlFiles: Array<{ file: string; mtime: number }>;
+	try {
+		jsonlFiles = fs.readdirSync(projectDir)
+			.filter(f => f.endsWith('.jsonl'))
+			.map(f => {
+				const fullPath = path.join(projectDir, f);
+				try {
+					const stat = fs.statSync(fullPath);
+					return { file: fullPath, mtime: stat.mtimeMs };
+				} catch {
+					return null;
+				}
+			})
+			.filter((entry): entry is { file: string; mtime: number } => entry !== null)
+			.sort((a, b) => b.mtime - a.mtime);
+	} catch {
+		return;
+	}
+
+	// Only consider actively used files (modified in the last 10 minutes)
+	// This tight window avoids adopting stale sessions from hours/days ago
+	const activeThresholdMs = 10 * 60 * 1000;
+	const recentFiles = jsonlFiles.filter(
+		f => (Date.now() - f.mtime) < activeThresholdMs && !ownedJsonlFiles.has(f.file),
+	);
+
+	if (recentFiles.length === 0) {
+		console.log('[Pixel Agents] adoptExistingTerminals: no active JSONL files in project dir');
+		return;
+	}
+
+	// Only adopt up to min(terminals, files) to avoid mismatches
+	const adoptCount = Math.min(candidateTerminals.length, recentFiles.length);
+	if (candidateTerminals.length !== recentFiles.length) {
+		console.log(
+			`[Pixel Agents] adoptExistingTerminals: count mismatch — ${candidateTerminals.length} terminals vs ${recentFiles.length} active JSONL files. Adopting ${adoptCount}.`,
+		);
+	}
+
+	let adopted = 0;
+	for (let i = 0; i < adoptCount; i++) {
+		const terminal = candidateTerminals[i];
+		const jsonl = recentFiles[i];
+
+		knownJsonlFiles.add(jsonl.file);
+
+		const id = nextAgentIdRef.current++;
+		const agent: AgentState = {
+			id,
+			terminalRef: terminal,
+			projectDir,
+			jsonlFile: jsonl.file,
+			fileOffset: 0,
+			lineBuffer: '',
+			activeToolIds: new Set(),
+			activeToolStatuses: new Map(),
+			activeToolNames: new Map(),
+			activeSubagentToolIds: new Map(),
+			activeSubagentToolNames: new Map(),
+			isWaiting: false,
+			permissionSent: false,
+			hadToolsInTurn: false,
+		};
+
+		agents.set(id, agent);
+		activeAgentIdRef.current = id;
+
+		console.log(`[Pixel Agents] Agent ${id}: auto-adopted terminal "${terminal.name}" → ${path.basename(jsonl.file)}`);
+		webview?.postMessage({ type: 'agentCreated', id });
+
+		// Skip to end of existing content, then start watching for new activity
+		try {
+			if (fs.existsSync(jsonl.file)) {
+				const stat = fs.statSync(jsonl.file);
+				agent.fileOffset = stat.size;
+				startFileWatching(id, jsonl.file, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview);
+			}
+		} catch { /* ignore */ }
+
+		adopted++;
+	}
+
+	if (adopted > 0) {
+		persistAgents();
+		console.log(`[Pixel Agents] Auto-adopted ${adopted} existing Claude Code terminal(s) for this project`);
+	}
+}
+
 export function sendExistingAgents(
 	agents: Map<number, AgentState>,
 	context: vscode.ExtensionContext,

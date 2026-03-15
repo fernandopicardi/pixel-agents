@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { vscode } from '../vscodeApi.js'
 import { isSoundEnabled, setSoundEnabled } from '../notificationSound.js'
+import type { IdeType } from '../hooks/useExtensionMessages.js'
 
 interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
   isDebugMode: boolean
   onToggleDebugMode: () => void
+  ideType: IdeType
 }
 
 const menuItemBase: React.CSSProperties = {
@@ -24,7 +26,13 @@ const menuItemBase: React.CSSProperties = {
   textAlign: 'left',
 }
 
-export function SettingsModal({ isOpen, onClose, isDebugMode, onToggleDebugMode }: SettingsModalProps) {
+const ideDisplayNames: Record<IdeType, string> = {
+  vscode: 'VS Code',
+  cursor: 'Cursor',
+  unknown: 'Unknown IDE',
+}
+
+export function SettingsModal({ isOpen, onClose, isDebugMode, onToggleDebugMode, ideType }: SettingsModalProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [soundLocal, setSoundLocal] = useState(isSoundEnabled)
 
@@ -190,6 +198,18 @@ export function SettingsModal({ isOpen, onClose, isDebugMode, onToggleDebugMode 
             />
           )}
         </button>
+        {/* IDE info line */}
+        <div
+          style={{
+            padding: '6px 10px',
+            fontSize: '20px',
+            color: 'rgba(255, 255, 255, 0.35)',
+            borderTop: '1px solid var(--pixel-border)',
+            marginTop: '4px',
+          }}
+        >
+          Running in {ideDisplayNames[ideType]}
+        </div>
       </div>
     </>
   )

@@ -1,13 +1,25 @@
 # Pixel Agents — Compressed Reference
 
-VS Code extension with embedded React webview: pixel art office where AI agents (Claude Code terminals) are animated characters.
+VS Code / Cursor IDE extension with embedded React webview: pixel art office where AI agents (Claude Code terminals) are animated characters.
+
+## Cursor IDE Compatibility
+
+Extension works in both VS Code and Cursor IDE (a VS Code fork). Key adaptations:
+- `engines.vscode` lowered to `^1.85.0` for Cursor compatibility (Cursor is based on VS Code ~1.93.x)
+- `src/ideDetector.ts` detects IDE at runtime via `vscode.env.appName` ("Visual Studio Code" vs "Cursor")
+- IDE type passed to webview via `ideInfo` message, displayed in Settings modal
+- All VS Code APIs used (`WebviewViewProvider`, terminals, `workspaceState`, `globalState`) are available in Cursor
+- Claude Code CLI (`claude --session-id`) works identically in both IDEs
+- JSONL file paths (`~/.claude/projects/`) are IDE-agnostic
+- To install in Cursor: package as VSIX (`vsce package`) and install via Cursor's "Install from VSIX" option
 
 ## Architecture
 
 ```
 src/                          — Extension backend (Node.js, VS Code API)
-  constants.ts                — All backend magic numbers/strings (timing, truncation, asset parsing, VS Code IDs)
-  extension.ts                — Entry: activate(), deactivate()
+  constants.ts                — All backend magic numbers/strings (timing, truncation, asset parsing, IDE IDs)
+  extension.ts                — Entry: activate(), deactivate(), IDE detection
+  ideDetector.ts              — IDE detection utility (VS Code vs Cursor vs unknown)
   PixelAgentsViewProvider.ts   — WebviewViewProvider, message dispatch, asset loading
   assetLoader.ts              — PNG parsing, sprite conversion, catalog building, default layout loading
   agentManager.ts             — Terminal lifecycle: launch, remove, restore, persist

@@ -3,6 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import type { AgentState } from './types.js';
+import type { IdeType } from './ideDetector.js';
 import {
 	launchNewTerminal,
 	removeAgent,
@@ -11,6 +12,7 @@ import {
 	sendExistingAgents,
 	sendLayout,
 	getProjectDirPath,
+	adoptExistingTerminals,
 } from './agentManager.js';
 import { ensureProjectScan } from './fileWatcher.js';
 import { loadFurnitureAssets, sendAssetsToWebview, loadFloorTiles, sendFloorTilesToWebview, loadWallTiles, sendWallTilesToWebview, loadCharacterSprites, sendCharacterSpritesToWebview, loadDefaultLayout } from './assetLoader.js';
@@ -42,7 +44,11 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	// Cross-window layout sync
 	layoutWatcher: LayoutWatcher | null = null;
 
-	constructor(private readonly context: vscode.ExtensionContext) {}
+	readonly ideType: IdeType;
+
+	constructor(private readonly context: vscode.ExtensionContext, ideType: IdeType) {
+		this.ideType = ideType;
+	}
 
 	private get extensionUri(): vscode.Uri {
 		return this.context.extensionUri;
@@ -99,9 +105,16 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 					this.jsonlPollTimers, this.projectScanTimer, this.activeAgentId,
 					this.webview, this.persistAgents,
 				);
-				// Send persisted settings to webview
+				// Adopt existing Claude Code terminals not previously tracked
+				adoptExistingTerminals(
+					this.nextAgentId, this.agents, this.activeAgentId, this.knownJsonlFiles,
+					this.fileWatchers, this.pollingTimers, this.waitingTimers, this.permissionTimers,
+					this.webview, this.persistAgents,
+				);
+				// Send persisted settings and IDE info to webview
 				const soundEnabled = this.context.globalState.get<boolean>(GLOBAL_KEY_SOUND_ENABLED, true);
 				this.webview?.postMessage({ type: 'settingsLoaded', soundEnabled });
+				this.webview?.postMessage({ type: 'ideInfo', ide: this.ideType });
 
 				// Send workspace folders to webview (only when multi-root)
 				const wsFolders = vscode.workspace.workspaceFolders;
