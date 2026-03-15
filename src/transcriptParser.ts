@@ -257,16 +257,14 @@ export function processTranscriptLine(
 				webview?.postMessage({ type: 'agentToolsClear', id: agentId });
 			}
 
-			agent.isWaiting = true;
 			agent.permissionSent = false;
 			agent.hadToolsInTurn = false;
 			agent.turnToolCount = 0;
 			resetTurnNotificationState(agent);
-			webview?.postMessage({
-				type: 'agentStatus',
-				id: agentId,
-				status: 'waiting',
-			});
+
+			// Delay waiting status to avoid false idle between subtasks.
+			// If new tool_use arrives within 3s, the waiting timer will be cancelled.
+			startWaitingTimer(agentId, 3000, agents, waitingTimers, webview);
 		}
 	} catch {
 		// Ignore malformed lines

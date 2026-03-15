@@ -12,6 +12,10 @@ import {
   WANDER_MOVES_BEFORE_REST_MAX,
   SEAT_REST_MIN_SEC,
   SEAT_REST_MAX_SEC,
+  RECREATION_ROOM_COL_MIN,
+  RECREATION_ROOM_COL_MAX,
+  RECREATION_ROOM_ROW_MIN,
+  RECREATION_ROOM_ROW_MAX,
 } from '../../constants.js'
 
 /** Tools that show reading animation instead of typing */
@@ -75,6 +79,7 @@ export function createCharacter(
     seatTimer: 0,
     isSubagent: false,
     parentAgentId: null,
+    isRetired: false,
     matrixEffect: null,
     matrixEffectTimer: 0,
     matrixEffectSeeds: [],
@@ -165,7 +170,13 @@ export function updateCharacter(
           }
         }
         if (walkableTiles.length > 0) {
-          const target = walkableTiles[Math.floor(Math.random() * walkableTiles.length)]
+          // Retired sub-agents only wander in the recreation room
+          const candidates = ch.isRetired
+            ? walkableTiles.filter(t => t.col >= RECREATION_ROOM_COL_MIN && t.col <= RECREATION_ROOM_COL_MAX
+              && t.row >= RECREATION_ROOM_ROW_MIN && t.row <= RECREATION_ROOM_ROW_MAX)
+            : walkableTiles
+          if (candidates.length === 0) break
+          const target = candidates[Math.floor(Math.random() * candidates.length)]
           const path = findPath(ch.tileCol, ch.tileRow, target.col, target.row, tileMap, blockedTiles)
           if (path.length > 0) {
             ch.path = path

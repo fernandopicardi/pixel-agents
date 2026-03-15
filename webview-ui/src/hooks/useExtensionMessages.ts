@@ -15,6 +15,10 @@ export interface SubagentCharacter {
   parentAgentId: number
   parentToolId: string
   label: string
+  /** When set, the sub-agent has completed and is in the recreation room */
+  retired?: boolean
+  /** Tool activity history preserved from when the sub-agent was active */
+  retiredHistory?: string[]
 }
 
 export interface FurnitureAsset {
@@ -291,9 +295,16 @@ export function useExtensionMessages(
           delete next[id]
           return next
         })
-        // Remove all sub-agent characters belonging to this agent
-        os.removeAllSubagents(id)
-        setSubagentCharacters((prev) => prev.filter((s) => s.parentAgentId !== id))
+        // Retire all sub-agent characters to recreation room
+        os.retireAllSubagents(id)
+        setSubagentCharacters((prev) => prev.map((s) => {
+          if (s.parentAgentId === id && !s.retired) {
+            const agentSubs = subagentTools[id]
+            const toolList = agentSubs?.[s.parentToolId] || []
+            return { ...s, retired: true, retiredHistory: toolList.map(t => t.status) }
+          }
+          return s
+        }))
         os.setAgentTool(id, null)
         os.clearPermissionBubble(id)
       } else if (msg.type === 'agentSelected') {
@@ -401,9 +412,18 @@ export function useExtensionMessages(
           }
           return { ...prev, [id]: next }
         })
-        // Remove sub-agent character
-        os.removeSubagent(id, parentToolId)
-        setSubagentCharacters((prev) => prev.filter((s) => !(s.parentAgentId === id && s.parentToolId === parentToolId)))
+        // Retire sub-agent to recreation room instead of removing
+        os.retireSubagent(id, parentToolId)
+        setSubagentCharacters((prev) => prev.map((s) => {
+          if (s.parentAgentId === id && s.parentToolId === parentToolId) {
+            // Capture tool history before clearing
+            const agentSubs = subagentTools[id]
+            const toolList = agentSubs?.[parentToolId] || []
+            const history = toolList.map(t => t.status)
+            return { ...s, retired: true, retiredHistory: history }
+          }
+          return s
+        }))
       } else if (msg.type === 'characterSpritesLoaded') {
         const characters = msg.characters as Array<{ down: string[][][]; up: string[][][]; right: string[][][] }>
         console.log(`[Webview] Received ${characters.length} pre-colored character sprites`)

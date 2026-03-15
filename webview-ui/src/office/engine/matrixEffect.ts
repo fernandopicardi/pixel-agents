@@ -80,16 +80,16 @@ export function renderMatrixEffect(
             // Green overlay that fades as trail progresses
             const greenAlpha = (1 - trailPos) * MATRIX_TRAIL_OVERLAY_ALPHA
             if (flickerVisible(col, row, time)) {
-              ctx.fillStyle = `rgba(0, 255, 65, ${greenAlpha})`
+              ctx.fillStyle = `rgba(108, 92, 231, ${greenAlpha})`
               ctx.fillRect(px, py, zoom, zoom)
             }
           } else {
             // No character pixel: fading green trail
             if (flickerVisible(col, row, time)) {
               const alpha = (1 - trailPos) * MATRIX_TRAIL_EMPTY_ALPHA
-              ctx.fillStyle = trailPos < MATRIX_TRAIL_MID_THRESHOLD ? `rgba(0, 255, 65, ${alpha})`
-                : trailPos < MATRIX_TRAIL_DIM_THRESHOLD ? `rgba(0, 170, 40, ${alpha})`
-                  : `rgba(0, 85, 20, ${alpha})`
+              ctx.fillStyle = trailPos < MATRIX_TRAIL_MID_THRESHOLD ? `rgba(108, 92, 231, ${alpha})`
+                : trailPos < MATRIX_TRAIL_DIM_THRESHOLD ? `rgba(85, 72, 190, ${alpha})`
+                  : `rgba(55, 45, 140, ${alpha})`
               ctx.fillRect(px, py, zoom, zoom)
             }
           }
@@ -117,9 +117,9 @@ export function renderMatrixEffect(
           if (flickerVisible(col, row, time)) {
             const trailPos = distFromHead / MATRIX_TRAIL_LENGTH
             const alpha = (1 - trailPos) * MATRIX_TRAIL_EMPTY_ALPHA
-            ctx.fillStyle = trailPos < MATRIX_TRAIL_MID_THRESHOLD ? `rgba(0, 255, 65, ${alpha})`
-              : trailPos < MATRIX_TRAIL_DIM_THRESHOLD ? `rgba(0, 170, 40, ${alpha})`
-                : `rgba(0, 85, 20, ${alpha})`
+            ctx.fillStyle = trailPos < MATRIX_TRAIL_MID_THRESHOLD ? `rgba(108, 92, 231, ${alpha})`
+              : trailPos < MATRIX_TRAIL_DIM_THRESHOLD ? `rgba(85, 72, 190, ${alpha})`
+                : `rgba(55, 45, 140, ${alpha})`
             ctx.fillRect(px, py, zoom, zoom)
           }
         }

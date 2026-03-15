@@ -7,44 +7,45 @@
 }
 
 :root {
-  --pixel-bg: #1e1e2e;
-  --pixel-border: #4a4a6a;
-  --pixel-border-light: #6a6a8a;
-  --pixel-accent: #5a8cff;
-  --pixel-green: #5ac88c;
-  --pixel-shadow: 2px 2px 0px #0a0a14;
+  /* ─── AgentCraft Premium Theme ─── */
+  --pixel-bg: #12121e;
+  --pixel-border: #2a2a44;
+  --pixel-border-light: #3d3d5c;
+  --pixel-accent: #6c5ce7;
+  --pixel-green: #00cec9;
+  --pixel-shadow: 2px 2px 0px #08080f;
 
   /* Button base */
-  --pixel-text: rgba(255, 255, 255, 0.8);
-  --pixel-text-dim: rgba(255, 255, 255, 0.7);
-  --pixel-btn-bg: rgba(255, 255, 255, 0.08);
-  --pixel-btn-hover-bg: rgba(255, 255, 255, 0.15);
-  --pixel-btn-disabled-opacity: 0.35;
+  --pixel-text: rgba(255, 255, 255, 0.88);
+  --pixel-text-dim: rgba(255, 255, 255, 0.65);
+  --pixel-btn-bg: rgba(255, 255, 255, 0.06);
+  --pixel-btn-hover-bg: rgba(108, 92, 231, 0.2);
+  --pixel-btn-disabled-opacity: 0.3;
 
   /* Active/selected button state */
-  --pixel-active-bg: rgba(90, 140, 255, 0.25);
+  --pixel-active-bg: rgba(108, 92, 231, 0.25);
 
-  /* Agent button */
-  --pixel-agent-bg: rgba(90, 200, 140, 0.15);
-  --pixel-agent-hover-bg: rgba(90, 200, 140, 0.3);
-  --pixel-agent-border: #5ac88c;
-  --pixel-agent-text: rgba(200, 255, 220, 0.95);
+  /* Agent button — teal/cyan accent */
+  --pixel-agent-bg: rgba(0, 206, 201, 0.12);
+  --pixel-agent-hover-bg: rgba(0, 206, 201, 0.28);
+  --pixel-agent-border: #00cec9;
+  --pixel-agent-text: rgba(180, 255, 250, 0.95);
 
   /* Close button */
-  --pixel-close-text: rgba(255, 255, 255, 0.5);
-  --pixel-close-hover: #e55;
+  --pixel-close-text: rgba(255, 255, 255, 0.45);
+  --pixel-close-hover: #ff6b6b;
 
   /* Hints & confirmations */
-  --pixel-hint-bg: #3278c8;
-  --pixel-reset-text: #ecc;
-  --pixel-danger-bg: #a33;
+  --pixel-hint-bg: #6c5ce7;
+  --pixel-reset-text: #ffd3d3;
+  --pixel-danger-bg: #c0392b;
 
-  /* Vignette */
-  --pixel-vignette: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+  /* Vignette — subtler, more cinematic */
+  --pixel-vignette: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
 
   /* Status dot colors */
-  --pixel-status-permission: var(--vscode-charts-yellow, #cca700);
-  --pixel-status-active: var(--vscode-charts-blue, #3794ff);
+  --pixel-status-permission: var(--vscode-charts-yellow, #fdcb6e);
+  --pixel-status-active: var(--vscode-charts-blue, #74b9ff);
 
   /* ToolOverlay z-index layers */
   --pixel-overlay-z: 100;

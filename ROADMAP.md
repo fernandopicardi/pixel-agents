@@ -28,6 +28,9 @@
 | F09 | Agent Orchestration / Teams | Orchestration | L          | `done`    | Sprint 6 |
 | F10 | Agent Performance Scoring   | Analytics     | L          | `done`    | Sprint 6 |
 | F11 | Project Map View            | Visualization | XL         | `backlog` | —        |
+| F12 | Sub-agent Recreation Room   | Agent UX      | M          | `done`    | Sprint 8 |
+| F13 | Session History Board       | Analytics     | M          | `backlog` | —        |
+| F14 | Active Tasks Panel          | Agent UX      | S          | `backlog` | —        |
 
 
 **Status values:** `backlog` → `in_progress` → `review` → `done`
@@ -625,6 +628,51 @@ Alternative view: project structure as a pixel art city:
 
 ---
 
+## F12 — Sub-agent Recreation Room
+
+**Epic:** Agent UX
+**Complexity:** M
+**Status:** `done`
+**Branch:** `feat/recreation-room`
+
+### Description
+
+When sub-agents complete their Task, instead of despawning they walk to a dedicated "recreation room" in the office where they remain visible. This preserves their history and lets users review what each sub-agent did during the session.
+
+### Acceptance Criteria
+
+- [x] Completed sub-agents walk to recreation room instead of despawning
+- [x] Recreation room is a distinct area in the default layout with its own floor color
+- [x] Retired sub-agents wander only within the recreation room bounds
+- [x] Tooltip shows "Done: <task label>" with muted purple status dot
+- [x] Clicking a retired sub-agent shows their tool history (last 5 actions)
+- [x] Retired sub-agents are cleared when parent agent terminal closes
+
+### Implementation Notes
+
+- `Character.isRetired` flag added to Character type
+- `OfficeState.retireSubagent()` frees seat, marks as retired, pathfinds to recreation room
+- `OfficeState.retireAllSubagents()` retires all active sub-agents of a parent (on turn end)
+- Recreation room bounds defined as constants: `RECREATION_ROOM_COL/ROW_MIN/MAX` (cols 26-30, rows 1-16)
+- `characters.ts` `updateCharacter()` filters walkable tiles for retired characters to recreation room only
+- `useExtensionMessages.ts` on `subagentClear`: calls `retireSubagent` instead of `removeSubagent`, preserves `retiredHistory` (tool status strings)
+- `ToolOverlay.tsx`: retired sub-agents show "Done:" prefix, purple dot, and expandable history on click
+- Default layout expanded to 32x18 with 4 rooms: dev area, meeting room, lounge, recreation room
+
+---
+
+## F13 — Session History Board
+
+**Epic:** Analytics
+**Complexity:** M
+**Status:** `backlog`
+
+### Description
+
+A visual board/panel showing a persistent history of all agent and sub-agent activity during the session. Like a kanban board where completed tasks accumulate.
+
+---
+
 ## Sprint Log
 
 ### Sprint 1 — Agent UX Foundations
@@ -683,6 +731,13 @@ Alternative view: project structure as a pixel art city:
 **Goal:** Implement F11 (Project Map)
 **Status:** `not_started`
 
+### Sprint 8 — Sub-agent Memory
+
+**Goal:** Implement F12 (Recreation Room)
+**Status:** `done`
+**Start date:** 2026-03-15
+**End date:** 2026-03-15
+
 ---
 
 ## Changelog
@@ -698,5 +753,8 @@ Alternative view: project structure as a pixel art city:
 | 2026-03-15 | F07 File Heatmap implemented (Sprint 4 complete) | Claude + Fernando |
 | 2026-03-15 | F09 Agent Orchestration (standup + sub-agent tree) implemented | Claude + Fernando |
 | 2026-03-15 | F10 Performance Scoring implemented (Sprint 6 complete) | Claude + Fernando |
+| 2026-03-15 | F12 Sub-agent Recreation Room implemented (Sprint 8) | Claude + Fernando |
+| 2026-03-15 | Visual overhaul: new color theme, character palettes, 4-room office layout | Claude + Fernando |
+| 2026-03-15 | Full rename from pixel-agents to AgentCraft (agent-craft) | Claude + Fernando |
 
 

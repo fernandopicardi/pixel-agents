@@ -12,6 +12,10 @@ import {
   CHARACTER_SITTING_OFFSET_PX,
   CHARACTER_HIT_HALF_WIDTH,
   CHARACTER_HIT_HEIGHT,
+  RECREATION_ROOM_COL_MIN,
+  RECREATION_ROOM_COL_MAX,
+  RECREATION_ROOM_ROW_MIN,
+  RECREATION_ROOM_ROW_MAX,
 } from '../../constants.js'
 import type { Character, Seat, FurnitureInstance, TileType as TileTypeVal, OfficeLayout, PlacedFurniture } from '../types.js'
 import { createCharacter, updateCharacter } from './characters.js'
@@ -454,6 +458,50 @@ export class OfficeState {
     if (this.cameraFollowId === id) this.cameraFollowId = null
   }
 
+  /** Retire a sub-agent to the recreation room instead of despawning */
+  retireSubagent(parentAgentId: number, parentToolId: string): void {
+    const key = `${parentAgentId}:${parentToolId}`
+    const id = this.subagentIdMap.get(key)
+    if (id === undefined) return
+
+    const ch = this.characters.get(id)
+    if (!ch) return
+
+    // Free current seat
+    if (ch.seatId) {
+      const seat = this.seats.get(ch.seatId)
+      if (seat) seat.assigned = false
+      ch.seatId = null
+    }
+
+    // Mark as retired
+    ch.isRetired = true
+    ch.isActive = false
+    ch.currentTool = null
+    ch.bubbleType = null
+
+    // Find a walkable tile in the recreation room and pathfind to it
+    const recTiles = this.walkableTiles.filter(t =>
+      t.col >= RECREATION_ROOM_COL_MIN && t.col <= RECREATION_ROOM_COL_MAX
+      && t.row >= RECREATION_ROOM_ROW_MIN && t.row <= RECREATION_ROOM_ROW_MAX
+    )
+    if (recTiles.length > 0) {
+      const target = recTiles[Math.floor(Math.random() * recTiles.length)]
+      const path = findPath(ch.tileCol, ch.tileRow, target.col, target.row, this.tileMap, this.blockedTiles)
+      if (path.length > 0) {
+        ch.path = path
+        ch.moveProgress = 0
+        ch.state = CharacterState.WALK
+        ch.frame = 0
+        ch.frameTimer = 0
+      }
+    }
+
+    // Clean up tracking maps
+    this.subagentIdMap.delete(key)
+    this.subagentMeta.delete(id)
+  }
+
   /** Remove all sub-agents belonging to a parent agent */
   removeAllSubagents(parentAgentId: number): void {
     const toRemove: string[] = []
@@ -486,6 +534,20 @@ export class OfficeState {
     }
     for (const key of toRemove) {
       this.subagentIdMap.delete(key)
+    }
+  }
+
+  /** Retire all active (non-retired) sub-agents belonging to a parent agent */
+  retireAllSubagents(parentAgentId: number): void {
+    const toRetire: Array<{ key: string; parentToolId: string }> = []
+    for (const [key, id] of this.subagentIdMap) {
+      const meta = this.subagentMeta.get(id)
+      if (meta && meta.parentAgentId === parentAgentId) {
+        toRetire.push({ key, parentToolId: meta.parentToolId })
+      }
+    }
+    for (const { parentToolId } of toRetire) {
+      this.retireSubagent(parentAgentId, parentToolId)
     }
   }
 

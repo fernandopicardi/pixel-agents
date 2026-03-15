@@ -7,6 +7,12 @@ export const DEFAULT_ROWS = 11
 export const MAX_COLS = 64
 export const MAX_ROWS = 64
 
+// ── Recreation Room (retired sub-agents go here) ────────────
+export const RECREATION_ROOM_COL_MIN = 26
+export const RECREATION_ROOM_COL_MAX = 30
+export const RECREATION_ROOM_ROW_MIN = 1
+export const RECREATION_ROOM_ROW_MAX = 16
+
 // ── Character Animation ─────────────────────────────────────
 export const WALK_SPEED_PX_PER_SEC = 48
 export const WALK_FRAME_DURATION_SEC = 0.15
@@ -26,7 +32,7 @@ export const MATRIX_SPRITE_ROWS = 24
 export const MATRIX_FLICKER_FPS = 30
 export const MATRIX_FLICKER_VISIBILITY_THRESHOLD = 180
 export const MATRIX_COLUMN_STAGGER_RANGE = 0.3
-export const MATRIX_HEAD_COLOR = '#ccffcc'
+export const MATRIX_HEAD_COLOR = '#d4ccff'
 export const MATRIX_TRAIL_OVERLAY_ALPHA = 0.6
 export const MATRIX_TRAIL_EMPTY_ALPHA = 0.5
 export const MATRIX_TRAIL_MID_THRESHOLD = 0.33
@@ -49,14 +55,14 @@ export const BUTTON_LINE_WIDTH_ZOOM_FACTOR = 0.5
 export const BUBBLE_FADE_DURATION_SEC = 0.5
 export const BUBBLE_SITTING_OFFSET_PX = 10
 export const BUBBLE_VERTICAL_OFFSET_PX = 24
-export const FALLBACK_FLOOR_COLOR = '#808080'
+export const FALLBACK_FLOOR_COLOR = '#1a1a2e'
 
 // ── Rendering - Overlay Colors (canvas, not CSS) ─────────────
-export const SEAT_OWN_COLOR = 'rgba(0, 127, 212, 0.35)'
-export const SEAT_AVAILABLE_COLOR = 'rgba(0, 200, 80, 0.35)'
-export const SEAT_BUSY_COLOR = 'rgba(220, 50, 50, 0.35)'
-export const GRID_LINE_COLOR = 'rgba(255,255,255,0.12)'
-export const VOID_TILE_OUTLINE_COLOR = 'rgba(255,255,255,0.08)'
+export const SEAT_OWN_COLOR = 'rgba(108, 92, 231, 0.3)'
+export const SEAT_AVAILABLE_COLOR = 'rgba(0, 206, 201, 0.3)'
+export const SEAT_BUSY_COLOR = 'rgba(255, 107, 107, 0.3)'
+export const GRID_LINE_COLOR = 'rgba(255,255,255,0.08)'
+export const VOID_TILE_OUTLINE_COLOR = 'rgba(255,255,255,0.05)'
 export const VOID_TILE_DASH_PATTERN: [number, number] = [2, 2]
 export const GHOST_BORDER_HOVER_FILL = 'rgba(60, 130, 220, 0.25)'
 export const GHOST_BORDER_HOVER_STROKE = 'rgba(60, 130, 220, 0.5)'

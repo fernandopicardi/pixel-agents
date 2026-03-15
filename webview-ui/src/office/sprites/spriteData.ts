@@ -321,14 +321,14 @@ export const BUBBLE_WAITING_SPRITE: SpriteData = (() => {
 // ── Character Sprites ───────────────────────────────────────────
 // 16x24 characters with palette substitution
 
-/** Palette colors for 6 distinct agent characters */
+/** Palette colors for 6 distinct agent characters — modern tech worker style */
 export const CHARACTER_PALETTES = [
-  { skin: '#FFCC99', shirt: '#4488CC', pants: '#334466', hair: '#553322', shoes: '#222222' },
-  { skin: '#FFCC99', shirt: '#CC4444', pants: '#333333', hair: '#FFD700', shoes: '#222222' },
-  { skin: '#DEB887', shirt: '#44AA66', pants: '#334444', hair: '#222222', shoes: '#333333' },
-  { skin: '#FFCC99', shirt: '#AA55CC', pants: '#443355', hair: '#AA4422', shoes: '#222222' },
-  { skin: '#DEB887', shirt: '#CCAA33', pants: '#444433', hair: '#553322', shoes: '#333333' },
-  { skin: '#FFCC99', shirt: '#FF8844', pants: '#443322', hair: '#111111', shoes: '#222222' },
+  { skin: '#F5D0A9', shirt: '#6C5CE7', pants: '#2D3436', hair: '#2D1B0E', shoes: '#1a1a1a' }, // purple hoodie, dark jeans
+  { skin: '#F5D0A9', shirt: '#00CEC9', pants: '#2D3436', hair: '#C49A6C', shoes: '#1a1a1a' }, // teal tee, sandy hair
+  { skin: '#C68642', shirt: '#E17055', pants: '#333333', hair: '#1a1008', shoes: '#2d2d2d' }, // coral shirt, dark skin
+  { skin: '#F5D0A9', shirt: '#FDCB6E', pants: '#2D3436', hair: '#B83227', shoes: '#1a1a1a' }, // golden tee, red hair
+  { skin: '#D4A574', shirt: '#74B9FF', pants: '#34495E', hair: '#1a1008', shoes: '#2d2d2d' }, // sky blue, medium skin
+  { skin: '#F5D0A9', shirt: '#55EFC4', pants: '#2D3436', hair: '#5A3D1A', shoes: '#1a1a1a' }, // mint green, brown hair
 ] as const
 
 interface CharPalette {

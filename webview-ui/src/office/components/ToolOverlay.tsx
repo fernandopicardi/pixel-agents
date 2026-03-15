@@ -117,12 +117,15 @@ export function ToolOverlay({
 
         // Get activity text
         const subHasPermission = isSub && ch.bubbleType === 'permission'
+        const sub = isSub ? subagentCharacters.find((s) => s.id === id) : null
+        const isRetired = ch.isRetired
         let activityText: string
-        if (isSub) {
+        if (isRetired && sub) {
+          activityText = `Done: ${sub.label}`
+        } else if (isSub) {
           if (subHasPermission) {
             activityText = 'Needs approval'
           } else {
-            const sub = subagentCharacters.find((s) => s.id === id)
             activityText = sub ? sub.label : 'Subtask'
           }
         } else {
@@ -136,7 +139,9 @@ export function ToolOverlay({
         const isActive = ch.isActive
 
         let dotColor: string | null = null
-        if (hasPermission) {
+        if (isRetired) {
+          dotColor = 'rgba(108, 92, 231, 0.6)' // muted purple for retired
+        } else if (hasPermission) {
           dotColor = 'var(--pixel-status-permission)'
         } else if (isActive && hasActiveTools) {
           dotColor = 'var(--pixel-status-active)'
@@ -161,7 +166,7 @@ export function ToolOverlay({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              pointerEvents: isSelected ? 'auto' : 'none',
+              pointerEvents: isSelected || isRetired ? 'auto' : 'none',
               zIndex: isSelected ? 'var(--pixel-overlay-selected-z)' : 'var(--pixel-overlay-z)',
             }}
           >
@@ -252,6 +257,22 @@ export function ToolOverlay({
                   </button>
                 )}
               </div>
+              {/* Retired sub-agent history — shown when selected */}
+              {isRetired && isSelected && sub?.retiredHistory && sub.retiredHistory.length > 0 && (
+                <div style={{ marginTop: 3, maxHeight: 80, overflowY: 'auto' }}>
+                  <div style={{ fontSize: '14px', color: 'rgba(108, 92, 231, 0.7)', marginBottom: 2 }}>
+                    History ({sub.retiredHistory.length} actions)
+                  </div>
+                  {sub.retiredHistory.slice(-5).map((item, i) => (
+                    <div key={i} style={{
+                      fontSize: '14px', color: 'rgba(255,255,255,0.5)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              )}
               {/* Progress bar — premium only */}
               {progress !== null && isPremium && (
                 <div
