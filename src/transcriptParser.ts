@@ -121,6 +121,13 @@ export function processTranscriptLine(
 							agent.activeToolIds.delete(completedToolId);
 							agent.activeToolStatuses.delete(completedToolId);
 							agent.activeToolNames.delete(completedToolId);
+							// Increment turn tool count and send progress
+							agent.turnToolCount++;
+							webview?.postMessage({
+								type: 'agentTurnProgress',
+								id: agentId,
+								toolCount: agent.turnToolCount,
+							});
 							const toolId = completedToolId;
 							setTimeout(() => {
 								webview?.postMessage({
@@ -141,12 +148,14 @@ export function processTranscriptLine(
 					cancelWaitingTimer(agentId, waitingTimers);
 					clearAgentActivity(agent, agentId, permissionTimers, webview);
 					agent.hadToolsInTurn = false;
+					agent.turnToolCount = 0;
 				}
 			} else if (typeof content === 'string' && content.trim()) {
 				// New user text prompt — new turn starting
 				cancelWaitingTimer(agentId, waitingTimers);
 				clearAgentActivity(agent, agentId, permissionTimers, webview);
 				agent.hadToolsInTurn = false;
+				agent.turnToolCount = 0;
 			}
 		} else if (record.type === 'system' && record.subtype === 'turn_duration') {
 			cancelWaitingTimer(agentId, waitingTimers);
@@ -165,6 +174,7 @@ export function processTranscriptLine(
 			agent.isWaiting = true;
 			agent.permissionSent = false;
 			agent.hadToolsInTurn = false;
+			agent.turnToolCount = 0;
 			webview?.postMessage({
 				type: 'agentStatus',
 				id: agentId,

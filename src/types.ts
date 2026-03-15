@@ -17,6 +17,8 @@ export interface AgentState {
 	hadToolsInTurn: boolean;
 	/** Workspace folder name (only set for multi-root workspaces) */
 	folderName?: string;
+	/** Count of tool_use events completed in the current turn (for progress estimation) */
+	turnToolCount: number;
 }
 
 export interface PersistedAgent {

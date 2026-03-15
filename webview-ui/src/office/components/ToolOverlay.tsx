@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import type { ToolActivity } from '../types.js'
 import type { OfficeState } from '../engine/officeState.js'
-import type { SubagentCharacter } from '../../hooks/useExtensionMessages.js'
+import type { SubagentCharacter, AgentProgress } from '../../hooks/useExtensionMessages.js'
 import { TILE_SIZE, CharacterState } from '../types.js'
 import { TOOL_OVERLAY_VERTICAL_OFFSET, CHARACTER_SITTING_OFFSET_PX } from '../../constants.js'
+
+/** Rough average tools per turn for progress estimation */
+const AVG_TOOLS_PER_TURN = 8
 
 interface ToolOverlayProps {
   officeState: OfficeState
   agents: number[]
   agentTools: Record<number, ToolActivity[]>
+  agentProgress: Record<number, AgentProgress>
   subagentCharacters: SubagentCharacter[]
   containerRef: React.RefObject<HTMLDivElement | null>
   zoom: number
@@ -40,10 +44,22 @@ function getActivityText(
   return 'Idle'
 }
 
+/** Estimate turn progress as 0–100 based on completed tool count */
+function estimateProgress(agentId: number, agentProgress: Record<number, AgentProgress>, isActive: boolean): number | null {
+  if (!isActive) return null
+  const progress = agentProgress[agentId]
+  if (!progress || progress.toolCount === 0) return null
+  // Logarithmic curve: fast early progress, slows down approaching 100%
+  // Never reaches 100% (completion is signaled by turn_duration / waiting status)
+  const pct = Math.min(95, Math.round((1 - Math.exp(-progress.toolCount / AVG_TOOLS_PER_TURN)) * 100))
+  return pct
+}
+
 export function ToolOverlay({
   officeState,
   agents,
   agentTools,
+  agentProgress,
   subagentCharacters,
   containerRef,
   zoom,
@@ -124,6 +140,14 @@ export function ToolOverlay({
           dotColor = 'var(--pixel-status-active)'
         }
 
+        // Progress estimation
+        const progress = isSub ? null : estimateProgress(id, agentProgress, isActive)
+
+        // Agent display name
+        const agentLabel = isSub
+          ? undefined
+          : ch.folderName || `Agent #${id}`
+
         return (
           <div
             key={id}
@@ -142,8 +166,8 @@ export function ToolOverlay({
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: 5,
+                flexDirection: 'column',
+                gap: 0,
                 background: 'var(--pixel-bg)',
                 border: isSelected
                   ? '2px solid var(--pixel-border-light)'
@@ -152,75 +176,102 @@ export function ToolOverlay({
                 padding: isSelected ? '3px 6px 3px 8px' : '3px 8px',
                 boxShadow: 'var(--pixel-shadow)',
                 whiteSpace: 'nowrap',
-                maxWidth: 220,
+                maxWidth: 240,
+                minWidth: 80,
               }}
             >
-              {dotColor && (
-                <span
-                  className={isActive && !hasPermission ? 'pixel-agents-pulse' : undefined}
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: dotColor,
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-              <div style={{ overflow: 'hidden' }}>
-                <span
-                  style={{
-                    fontSize: isSub ? '20px' : '22px',
-                    fontStyle: isSub ? 'italic' : undefined,
-                    color: 'var(--vscode-foreground)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: 'block',
-                  }}
-                >
-                  {activityText}
-                </span>
-                {ch.folderName && (
+              {/* Top row: dot + activity text + close button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                {dotColor && (
+                  <span
+                    className={isActive && !hasPermission ? 'pixel-agents-pulse' : undefined}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: dotColor,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                <div style={{ overflow: 'hidden', flex: 1 }}>
+                  {agentLabel && (
+                    <span
+                      style={{
+                        fontSize: '16px',
+                        color: 'var(--pixel-text-dim)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: 'block',
+                      }}
+                    >
+                      {agentLabel}
+                    </span>
+                  )}
                   <span
                     style={{
-                      fontSize: '16px',
-                      color: 'var(--pixel-text-dim)',
+                      fontSize: isSub ? '20px' : '22px',
+                      fontStyle: isSub ? 'italic' : undefined,
+                      color: 'var(--vscode-foreground)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       display: 'block',
                     }}
                   >
-                    {ch.folderName}
+                    {activityText}
                   </span>
+                </div>
+                {isSelected && !isSub && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onCloseAgent(id)
+                    }}
+                    title="Close agent"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--pixel-close-text)',
+                      cursor: 'pointer',
+                      padding: '0 2px',
+                      fontSize: '26px',
+                      lineHeight: 1,
+                      marginLeft: 2,
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.color = 'var(--pixel-close-hover)'
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.color = 'var(--pixel-close-text)'
+                    }}
+                  >
+                    ×
+                  </button>
                 )}
               </div>
-              {isSelected && !isSub && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCloseAgent(id)
-                  }}
-                  title="Close agent"
+              {/* Progress bar */}
+              {progress !== null && (
+                <div
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--pixel-close-text)',
-                    cursor: 'pointer',
-                    padding: '0 2px',
-                    fontSize: '26px',
-                    lineHeight: 1,
-                    marginLeft: 2,
-                    flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.color = 'var(--pixel-close-hover)'
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.color = 'var(--pixel-close-text)'
+                    marginTop: 3,
+                    height: 4,
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: 0,
+                    overflow: 'hidden',
                   }}
                 >
-                  ×
-                </button>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${progress}%`,
+                      background: hasPermission
+                        ? 'var(--pixel-status-permission)'
+                        : 'var(--pixel-status-active)',
+                      transition: 'width 0.3s ease-out',
+                    }}
+                  />
+                </div>
               )}
             </div>
           </div>

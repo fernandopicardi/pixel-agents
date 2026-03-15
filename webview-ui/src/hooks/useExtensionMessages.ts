@@ -42,11 +42,16 @@ export interface WorkspaceFolder {
 
 export type IdeType = 'vscode' | 'cursor' | 'unknown'
 
+export interface AgentProgress {
+  toolCount: number
+}
+
 export interface ExtensionMessageState {
   agents: number[]
   selectedAgent: number | null
   agentTools: Record<number, ToolActivity[]>
   agentStatuses: Record<number, string>
+  agentProgress: Record<number, AgentProgress>
   subagentTools: Record<number, Record<string, ToolActivity[]>>
   subagentCharacters: SubagentCharacter[]
   layoutReady: boolean
@@ -79,6 +84,7 @@ export function useExtensionMessages(
   const [loadedAssets, setLoadedAssets] = useState<{ catalog: FurnitureAsset[]; sprites: Record<string, string[][]> } | undefined>()
   const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>([])
   const [ideType, setIdeType] = useState<IdeType>('vscode')
+  const [agentProgress, setAgentProgress] = useState<Record<number, AgentProgress>>({})
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
   const layoutReadyRef = useRef(false)
@@ -145,6 +151,12 @@ export function useExtensionMessages(
           delete next[id]
           return next
         })
+        setAgentProgress((prev) => {
+          if (!(id in prev)) return prev
+          const next = { ...prev }
+          delete next[id]
+          return next
+        })
         // Remove all sub-agent characters belonging to this agent
         os.removeAllSubagents(id)
         setSubagentCharacters((prev) => prev.filter((s) => s.parentAgentId !== id))
@@ -201,9 +213,19 @@ export function useExtensionMessages(
             [id]: list.map((t) => (t.toolId === toolId ? { ...t, done: true } : t)),
           }
         })
+      } else if (msg.type === 'agentTurnProgress') {
+        const id = msg.id as number
+        const toolCount = msg.toolCount as number
+        setAgentProgress((prev) => ({ ...prev, [id]: { toolCount } }))
       } else if (msg.type === 'agentToolsClear') {
         const id = msg.id as number
         setAgentTools((prev) => {
+          if (!(id in prev)) return prev
+          const next = { ...prev }
+          delete next[id]
+          return next
+        })
+        setAgentProgress((prev) => {
           if (!(id in prev)) return prev
           const next = { ...prev }
           delete next[id]
@@ -366,5 +388,5 @@ export function useExtensionMessages(
     return () => window.removeEventListener('message', handler)
   }, [getOfficeState])
 
-  return { agents, selectedAgent, agentTools, agentStatuses, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType }
+  return { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType }
 }

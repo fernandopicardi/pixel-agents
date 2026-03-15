@@ -74,6 +74,7 @@ export async function launchNewTerminal(
 		isWaiting: false,
 		permissionSent: false,
 		hadToolsInTurn: false,
+		turnToolCount: 0,
 		folderName,
 	};
 
@@ -199,6 +200,7 @@ export function restoreAgents(
 			isWaiting: false,
 			permissionSent: false,
 			hadToolsInTurn: false,
+			turnToolCount: 0,
 			folderName: p.folderName,
 		};
 
@@ -375,6 +377,7 @@ export function adoptExistingTerminals(
 			isWaiting: false,
 			permissionSent: false,
 			hadToolsInTurn: false,
+			turnToolCount: 0,
 		};
 
 		agents.set(id, agent);
