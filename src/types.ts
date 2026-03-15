@@ -31,6 +31,58 @@ export interface AgentState {
 	templateId?: string;
 	/** Template display name */
 	templateName?: string;
+	/** Accumulated metrics for this agent session */
+	metrics: AgentMetrics;
+	/** File access records for heatmap */
+	fileAccesses: FileAccessEvent[];
+	/** Last tool status text (for standup view) */
+	lastActivity?: string;
+}
+
+/** Per-agent accumulated metrics for dashboard and scoring */
+export interface AgentMetrics {
+	/** Tool usage counts by tool name */
+	toolCounts: Record<string, number>;
+	/** Unique files touched */
+	filesTouched: Set<string>;
+	/** Files written/edited (for revert detection) */
+	filesEdited: string[];
+	/** Total permission wait count */
+	permissionWaitCount: number;
+	/** Total turns completed */
+	turnCount: number;
+	/** Detected loops count */
+	loopCount: number;
+	/** Session start timestamp */
+	sessionStartTime: number;
+	/** Total active duration (ms) — approximation from tool start/end */
+	totalToolDuration: number;
+	/** Last tool start timestamp (for duration calc) */
+	lastToolStartTime: number | null;
+}
+
+/** File access event for heatmap tracking */
+export interface FileAccessEvent {
+	agentId: number;
+	filePath: string;
+	toolName: string;
+	timestamp: number;
+}
+
+/** Stored performance score per session */
+export interface PerformanceScore {
+	agentId: number;
+	sessionId: string;
+	score: number;
+	breakdown: {
+		loopPenalty: number;
+		revertPenalty: number;
+		idlePenalty: number;
+	};
+	toolCount: number;
+	turnCount: number;
+	filesEdited: number;
+	timestamp: number;
 }
 
 export interface NotificationPrefs {

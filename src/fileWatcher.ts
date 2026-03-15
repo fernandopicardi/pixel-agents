@@ -1,11 +1,25 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import type { AgentState } from './types.js';
+import type { AgentState, AgentMetrics } from './types.js';
 import { cancelWaitingTimer, cancelPermissionTimer, clearAgentActivity } from './timerManager.js';
 import { processTranscriptLine } from './transcriptParser.js';
 import type { NotificationEvent } from './transcriptParser.js';
 import { FILE_WATCHER_POLL_INTERVAL_MS, PROJECT_SCAN_INTERVAL_MS } from './constants.js';
+
+function createEmptyMetrics(): AgentMetrics {
+	return {
+		toolCounts: {},
+		filesTouched: new Set(),
+		filesEdited: [],
+		permissionWaitCount: 0,
+		turnCount: 0,
+		loopCount: 0,
+		sessionStartTime: Date.now(),
+		totalToolDuration: 0,
+		lastToolStartTime: null,
+	};
+}
 
 export function startFileWatching(
 	agentId: number,
@@ -218,6 +232,8 @@ function adoptTerminalForFile(
 		longTaskNotified: false,
 		recentToolNames: [],
 		loopNotified: false,
+		metrics: createEmptyMetrics(),
+		fileAccesses: [],
 	};
 
 	agents.set(id, agent);

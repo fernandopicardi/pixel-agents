@@ -46,6 +46,23 @@ export interface AgentProgress {
   toolCount: number
 }
 
+export interface FileAccessRecord {
+  agentId: number
+  filePath: string
+  toolName: string
+  timestamp: number
+}
+
+export interface PerformanceScoreState {
+  agentId: number
+  score: number
+  breakdown: { loopPenalty: number; revertPenalty: number; idlePenalty: number }
+  toolCount: number
+  turnCount: number
+  filesEdited: number
+  timestamp: number
+}
+
 export interface LicenseState {
   isPremium: boolean
   licenseKey: string | null
@@ -84,6 +101,9 @@ export interface ExtensionMessageState {
   license: LicenseState
   notificationPrefs: NotificationPrefsState
   templates: AgentTemplateState[]
+  fileAccesses: FileAccessRecord[]
+  agentScores: Record<number, PerformanceScoreState>
+  agentLastActivity: Record<number, string>
 }
 
 function saveAgentSeats(os: OfficeState): void {
@@ -114,6 +134,9 @@ export function useExtensionMessages(
   const [license, setLicense] = useState<LicenseState>({ isPremium: false, licenseKey: null, validationError: null })
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefsState>({ permissionNotify: true, longTaskNotify: true, loopDetectionNotify: true })
   const [templates, setTemplates] = useState<AgentTemplateState[]>([])
+  const [fileAccesses, setFileAccesses] = useState<FileAccessRecord[]>([])
+  const [agentScores, setAgentScores] = useState<Record<number, PerformanceScoreState>>({})
+  const [agentLastActivity, setAgentLastActivity] = useState<Record<number, string>>({})
 
   // Track whether initial layout has been loaded (ref to avoid re-render)
   const layoutReadyRef = useRef(false)
@@ -223,6 +246,7 @@ export function useExtensionMessages(
         os.setAgentTool(id, toolName)
         os.setAgentActive(id, true)
         os.clearPermissionBubble(id)
+        setAgentLastActivity((prev) => ({ ...prev, [id]: status }))
         // Create sub-agent character for Task tool subtasks
         if (status.startsWith('Subtask:')) {
           const label = status.slice('Subtask:'.length).trim()
@@ -411,6 +435,23 @@ export function useExtensionMessages(
         setNotificationPrefs(prefs)
       } else if (msg.type === 'templatesLoaded') {
         setTemplates(msg.templates as AgentTemplateState[])
+      } else if (msg.type === 'agentFileAccess') {
+        const record: FileAccessRecord = {
+          agentId: msg.id as number,
+          filePath: msg.filePath as string,
+          toolName: msg.toolName as string,
+          timestamp: msg.timestamp as number,
+        }
+        setFileAccesses((prev) => [...prev.slice(-199), record])
+        setAgentLastActivity((prev) => {
+          const toolName = msg.toolName as string
+          const fileName = (msg.filePath as string).split(/[\\/]/).pop() || ''
+          return { ...prev, [msg.id as number]: `${toolName}: ${fileName}` }
+        })
+      } else if (msg.type === 'agentScore') {
+        const id = msg.id as number
+        const score = msg.score as PerformanceScoreState
+        setAgentScores((prev) => ({ ...prev, [id]: score }))
       } else if (msg.type === 'furnitureAssetsLoaded') {
         try {
           const catalog = msg.catalog as FurnitureAsset[]
@@ -429,5 +470,5 @@ export function useExtensionMessages(
     return () => window.removeEventListener('message', handler)
   }, [getOfficeState])
 
-  return { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license, notificationPrefs, templates }
+  return { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license, notificationPrefs, templates, fileAccesses, agentScores, agentLastActivity }
 }

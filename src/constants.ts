@@ -34,6 +34,15 @@ export const LONG_TASK_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 export const LOOP_DETECTION_COUNT = 5;
 export const GLOBAL_KEY_NOTIFICATION_PREFS = 'pixel-agents.notificationPrefs';
 
+// ── Analytics & Scoring ─────────────────────────────────────
+export const MAX_FILE_EVENTS_PER_AGENT = 500;
+export const MAX_TIMELINE_EVENTS = 200;
+export const GLOBAL_KEY_PERFORMANCE_SCORES = 'pixel-agents.performanceScores';
+export const PERF_LOOP_PENALTY = 10;
+export const PERF_REVERT_PENALTY = 15;
+export const PERF_IDLE_PENALTY_PER_MIN = 2;
+export const PERF_MAX_SCORES_STORED = 20;
+
 // ── Agent Templates ─────────────────────────────────────────
 export const WORKSPACE_KEY_TEMPLATES = 'pixel-agents.templates';
 

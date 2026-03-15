@@ -30,6 +30,7 @@ import {
 	notifyLongTaskComplete,
 	notifyLoopDetected,
 } from './notificationManager.js';
+import { calculateScore, storeScore, getStoredScores } from './performanceScorer.js';
 
 export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	nextAgentId = { current: 1 };
@@ -79,12 +80,14 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
 		switch (event.kind) {
 			case 'permission':
+				agent.metrics.permissionWaitCount++;
 				notifyPermissionWait(this.context, agent);
 				break;
 			case 'longTaskComplete':
 				notifyLongTaskComplete(this.context, agent);
 				break;
 			case 'loopDetected':
+				agent.metrics.loopCount++;
 				notifyLoopDetected(this.context, agent, event.toolName);
 				break;
 		}
@@ -138,6 +141,15 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 			} else if (message.type === 'setNotificationPrefs') {
 				setNotificationPrefs(this.context, message.prefs as NotificationPrefs);
 				this.webview?.postMessage({ type: 'notificationPrefsLoaded', prefs: message.prefs });
+			} else if (message.type === 'openFile') {
+				// F07: Open file from heatmap click
+				const filePath = message.filePath as string;
+				if (filePath && fs.existsSync(filePath)) {
+					vscode.window.showTextDocument(vscode.Uri.file(filePath));
+				}
+			} else if (message.type === 'getPerformanceScores') {
+				const scores = getStoredScores(this.context);
+				this.webview?.postMessage({ type: 'performanceScores', scores });
 			} else if (message.type === 'saveTemplate') {
 				const tmpl = message.template as AgentTemplate;
 				if (!isPremium(this.context)) return;
@@ -358,6 +370,10 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 		vscode.window.onDidCloseTerminal((closed) => {
 			for (const [id, agent] of this.agents) {
 				if (agent.terminalRef === closed) {
+					// Calculate and store performance score before removing
+					const score = calculateScore(agent);
+					storeScore(this.context, score);
+					this.webview?.postMessage({ type: 'agentScore', id, score });
 					if (this.activeAgentId.current === id) {
 						this.activeAgentId.current = null;
 					}

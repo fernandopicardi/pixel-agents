@@ -19,6 +19,12 @@ interface BottomToolbarProps {
   templates: AgentTemplateState[]
   onSaveTemplate: (template: AgentTemplateState) => void
   onDeleteTemplate: (id: string) => void
+  isHeatmapOpen: boolean
+  onToggleHeatmap: () => void
+  isOrchOpen: boolean
+  onToggleOrch: () => void
+  isPerfOpen: boolean
+  onTogglePerf: () => void
 }
 
 const panelStyle: React.CSSProperties = {
@@ -82,6 +88,12 @@ export function BottomToolbar({
   templates,
   onSaveTemplate,
   onDeleteTemplate,
+  isHeatmapOpen,
+  onToggleHeatmap,
+  isOrchOpen,
+  onToggleOrch,
+  isPerfOpen,
+  onTogglePerf,
 }: BottomToolbarProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -259,6 +271,60 @@ export function BottomToolbar({
           </div>
         )}
       </div>
+      <button
+        onClick={onToggleHeatmap}
+        onMouseEnter={() => setHovered('heatmap')}
+        onMouseLeave={() => setHovered(null)}
+        style={
+          isHeatmapOpen
+            ? { ...btnActive, fontSize: '20px', padding: '5px 8px' }
+            : {
+                ...btnBase,
+                fontSize: '20px',
+                padding: '5px 8px',
+                background: hovered === 'heatmap' ? 'var(--pixel-btn-hover-bg)' : btnBase.background,
+              }
+        }
+        title="File Heatmap"
+      >
+        Files
+      </button>
+      <button
+        onClick={onToggleOrch}
+        onMouseEnter={() => setHovered('orch')}
+        onMouseLeave={() => setHovered(null)}
+        style={
+          isOrchOpen
+            ? { ...btnActive, fontSize: '20px', padding: '5px 8px' }
+            : {
+                ...btnBase,
+                fontSize: '20px',
+                padding: '5px 8px',
+                background: hovered === 'orch' ? 'var(--pixel-btn-hover-bg)' : btnBase.background,
+              }
+        }
+        title="Agent Orchestration"
+      >
+        Team
+      </button>
+      <button
+        onClick={onTogglePerf}
+        onMouseEnter={() => setHovered('perf')}
+        onMouseLeave={() => setHovered(null)}
+        style={
+          isPerfOpen
+            ? { ...btnActive, fontSize: '20px', padding: '5px 8px' }
+            : {
+                ...btnBase,
+                fontSize: '20px',
+                padding: '5px 8px',
+                background: hovered === 'perf' ? 'var(--pixel-btn-hover-bg)' : btnBase.background,
+              }
+        }
+        title="Performance Scores"
+      >
+        Score
+      </button>
       <button
         onClick={onToggleEditMode}
         onMouseEnter={() => setHovered('edit')}

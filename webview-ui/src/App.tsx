@@ -8,6 +8,9 @@ import { EditTool } from './office/types.js'
 import { isRotatable } from './office/layout/furnitureCatalog.js'
 import { vscode } from './vscodeApi.js'
 import { useExtensionMessages } from './hooks/useExtensionMessages.js'
+import { FileHeatmap } from './components/FileHeatmap.js'
+import { OrchestrationPanel } from './components/OrchestrationPanel.js'
+import { PerformanceCard } from './components/PerformanceCard.js'
 import { PULSE_ANIMATION_DURATION_SEC } from './constants.js'
 import { useEditorActions } from './hooks/useEditorActions.js'
 import { useEditorKeyboard } from './hooks/useEditorKeyboard.js'
@@ -121,7 +124,7 @@ function App() {
 
   const isEditDirty = useCallback(() => editor.isEditMode && editor.isDirty, [editor.isEditMode, editor.isDirty])
 
-  const { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license, notificationPrefs, templates } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty)
+  const { agents, selectedAgent, agentTools, agentStatuses, agentProgress, subagentTools, subagentCharacters, layoutReady, loadedAssets, workspaceFolders, ideType, license, notificationPrefs, templates, fileAccesses, agentScores, agentLastActivity } = useExtensionMessages(getOfficeState, editor.setLastSavedLayout, isEditDirty)
 
   const handleSubmitLicense = useCallback((key: string) => {
     vscode.postMessage({ type: 'setLicenseKey', key })
@@ -144,6 +147,9 @@ function App() {
   }, [])
 
   const [isDebugMode, setIsDebugMode] = useState(false)
+  const [isHeatmapOpen, setIsHeatmapOpen] = useState(false)
+  const [isOrchOpen, setIsOrchOpen] = useState(false)
+  const [isPerfOpen, setIsPerfOpen] = useState(false)
 
   const handleToggleDebugMode = useCallback(() => setIsDebugMode((prev) => !prev), [])
 
@@ -259,6 +265,12 @@ function App() {
         templates={templates}
         onSaveTemplate={handleSaveTemplate}
         onDeleteTemplate={handleDeleteTemplate}
+        isHeatmapOpen={isHeatmapOpen}
+        onToggleHeatmap={() => setIsHeatmapOpen(v => !v)}
+        isOrchOpen={isOrchOpen}
+        onToggleOrch={() => setIsOrchOpen(v => !v)}
+        isPerfOpen={isPerfOpen}
+        onTogglePerf={() => setIsPerfOpen(v => !v)}
       />
 
       {editor.isEditMode && editor.isDirty && (
@@ -325,6 +337,34 @@ function App() {
         zoom={editor.zoom}
         panRef={editor.panRef}
         onCloseAgent={handleCloseAgent}
+      />
+
+      <FileHeatmap
+        isOpen={isHeatmapOpen}
+        onClose={() => setIsHeatmapOpen(false)}
+        fileAccesses={fileAccesses}
+        agents={agents}
+        isPremium={license.isPremium}
+      />
+
+      <OrchestrationPanel
+        isOpen={isOrchOpen}
+        onClose={() => setIsOrchOpen(false)}
+        agents={agents}
+        agentTools={agentTools}
+        agentStatuses={agentStatuses}
+        agentLastActivity={agentLastActivity}
+        subagentCharacters={subagentCharacters}
+        isPremium={license.isPremium}
+        onFocusAgent={handleSelectAgent}
+      />
+
+      <PerformanceCard
+        isOpen={isPerfOpen}
+        onClose={() => setIsPerfOpen(false)}
+        agentScores={agentScores}
+        agents={agents}
+        isPremium={license.isPremium}
       />
 
       {isDebugMode && (

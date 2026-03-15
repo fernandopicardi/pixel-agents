@@ -13,12 +13,69 @@ import {
 	TEXT_IDLE_DELAY_MS,
 	BASH_COMMAND_DISPLAY_MAX_LENGTH,
 	TASK_DESCRIPTION_DISPLAY_MAX_LENGTH,
+	MAX_FILE_EVENTS_PER_AGENT,
 } from './constants.js';
 import {
 	onToolStarted,
 	checkLoopDetection,
 	resetTurnNotificationState,
 } from './notificationManager.js';
+
+const FILE_TOOLS = new Set(['Read', 'Edit', 'Write', 'Glob', 'Grep', 'NotebookEdit']);
+
+/** Extract full file path from tool input if applicable */
+function extractFilePath(toolName: string, input: Record<string, unknown>): string | null {
+	if (typeof input.file_path === 'string') return input.file_path;
+	if (typeof input.path === 'string') return input.path;
+	return null;
+}
+
+/** Track tool usage in agent metrics and file access */
+function trackToolMetrics(
+	agent: AgentState,
+	agentId: number,
+	toolName: string,
+	input: Record<string, unknown>,
+	webview: vscode.Webview | undefined,
+): void {
+	// Tool counts
+	agent.metrics.toolCounts[toolName] = (agent.metrics.toolCounts[toolName] || 0) + 1;
+	agent.metrics.lastToolStartTime = Date.now();
+
+	// File access tracking
+	if (FILE_TOOLS.has(toolName)) {
+		const filePath = extractFilePath(toolName, input);
+		if (filePath) {
+			agent.metrics.filesTouched.add(filePath);
+			if (toolName === 'Edit' || toolName === 'Write') {
+				agent.metrics.filesEdited.push(filePath);
+			}
+			const event = { agentId, filePath, toolName, timestamp: Date.now() };
+			agent.fileAccesses.push(event);
+			if (agent.fileAccesses.length > MAX_FILE_EVENTS_PER_AGENT) {
+				agent.fileAccesses = agent.fileAccesses.slice(-MAX_FILE_EVENTS_PER_AGENT);
+			}
+			webview?.postMessage({
+				type: 'agentFileAccess',
+				id: agentId,
+				filePath,
+				toolName,
+				timestamp: event.timestamp,
+			});
+		}
+	}
+
+	// Store last activity
+	agent.lastActivity = formatToolStatus(toolName, input);
+}
+
+/** Track tool duration on completion */
+function trackToolDone(agent: AgentState): void {
+	if (agent.metrics.lastToolStartTime) {
+		agent.metrics.totalToolDuration += Date.now() - agent.metrics.lastToolStartTime;
+		agent.metrics.lastToolStartTime = null;
+	}
+}
 
 export const PERMISSION_EXEMPT_TOOLS = new Set(['Task', 'AskUserQuestion']);
 
@@ -92,8 +149,9 @@ export function processTranscriptLine(
 						if (!PERMISSION_EXEMPT_TOOLS.has(toolName)) {
 							hasNonExemptTool = true;
 						}
-						// Track for smart notifications
+						// Track for smart notifications + metrics
 						onToolStarted(agent, toolName);
+						trackToolMetrics(agent, agentId, toolName, block.input || {}, webview);
 						webview?.postMessage({
 							type: 'agentToolStart',
 							id: agentId,
@@ -137,7 +195,8 @@ export function processTranscriptLine(
 							agent.activeToolIds.delete(completedToolId);
 							agent.activeToolStatuses.delete(completedToolId);
 							agent.activeToolNames.delete(completedToolId);
-							// Increment turn tool count and send progress
+							// Increment turn tool count, track duration, and send progress
+							trackToolDone(agent);
 							agent.turnToolCount++;
 							webview?.postMessage({
 								type: 'agentTurnProgress',
@@ -186,6 +245,7 @@ export function processTranscriptLine(
 
 			// Fire long-task notification before resetting state
 			onNotification?.({ kind: 'longTaskComplete', agentId });
+			agent.metrics.turnCount++;
 
 			// Definitive turn-end: clean up any stale tool state
 			if (agent.activeToolIds.size > 0) {

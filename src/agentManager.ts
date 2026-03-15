@@ -2,7 +2,21 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as vscode from 'vscode';
-import type { AgentState, PersistedAgent, AgentTemplate } from './types.js';
+import type { AgentState, PersistedAgent, AgentTemplate, AgentMetrics } from './types.js';
+
+function createEmptyMetrics(): AgentMetrics {
+	return {
+		toolCounts: {},
+		filesTouched: new Set(),
+		filesEdited: [],
+		permissionWaitCount: 0,
+		turnCount: 0,
+		loopCount: 0,
+		sessionStartTime: Date.now(),
+		totalToolDuration: 0,
+		lastToolStartTime: null,
+	};
+}
 import { cancelWaitingTimer, cancelPermissionTimer } from './timerManager.js';
 import { startFileWatching, readNewLines, ensureProjectScan } from './fileWatcher.js';
 import type { NotificationEvent } from './transcriptParser.js';
@@ -105,6 +119,8 @@ export async function launchNewTerminal(
 		loopNotified: false,
 		templateId: template?.id,
 		templateName: template?.name,
+		metrics: createEmptyMetrics(),
+		fileAccesses: [],
 	};
 
 	agents.set(id, agent);
@@ -243,6 +259,8 @@ export function restoreAgents(
 			longTaskNotified: false,
 			recentToolNames: [],
 			loopNotified: false,
+			metrics: createEmptyMetrics(),
+			fileAccesses: [],
 		};
 
 		agents.set(p.id, agent);
@@ -424,6 +442,8 @@ export function adoptExistingTerminals(
 			longTaskNotified: false,
 			recentToolNames: [],
 			loopNotified: false,
+			metrics: createEmptyMetrics(),
+			fileAccesses: [],
 		};
 
 		agents.set(id, agent);
