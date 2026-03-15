@@ -1,4 +1,4 @@
-# Pixel Agents — Premium Features Roadmap
+# AgentCraft — Premium Features Roadmap
 
 > This file tracks the implementation progress of all premium features.
 > It serves as both a **report** and a **continuity guide** for agents resuming work in new sessions.
@@ -122,7 +122,7 @@ Enhanced notification system beyond the current chime:
 ### Files to modify
 
 - `src/transcriptParser.ts` — loop detection logic
-- `src/PixelAgentsViewProvider.ts` — fire native notifications
+- `src/AgentCraftViewProvider.ts` — fire native notifications
 - `src/agentManager.ts` — long-task timer
 - `src/constants.ts` — new timing constants
 - `src/types.ts` — add notification preferences to state
@@ -131,12 +131,12 @@ Enhanced notification system beyond the current chime:
 ### Implementation Notes
 
 - New `src/notificationManager.ts` module handles all notification logic: prefs read/write, permission/long-task/loop alerts
-- `NotificationPrefs` stored in `globalState` key `pixel-agents.notificationPrefs` (defaults: all enabled)
+- `NotificationPrefs` stored in `globalState` key `agent-craft.notificationPrefs` (defaults: all enabled)
 - Permission wait: `vscode.window.showWarningMessage` with "Focus Terminal" action button
 - Long-task detection: `turnStartTime` tracked per agent, fires when turn_duration arrives and elapsed > 2min threshold
 - Loop detection: `recentToolNames` array tracks consecutive tool names; alerts when same tool appears 5+ times in a row
 - `loopNotified` flag prevents duplicate loop alerts per streak; resets on new user prompt
-- `NotificationEvent` type flows from `processTranscriptLine` → `readNewLines` → `startFileWatching` → `PixelAgentsViewProvider.handleNotification`
+- `NotificationEvent` type flows from `processTranscriptLine` → `readNewLines` → `startFileWatching` → `AgentCraftViewProvider.handleNotification`
 - Permission notification triggered via `onPermissionDetected` callback passed through `startPermissionTimer`
 - Settings UI: 3 toggles in SettingsModal (Permission Alerts, Long Task Complete, Loop Detection) — greyed out for free users
 - All notifications gated behind `isPremium()` check in notificationManager
@@ -174,7 +174,7 @@ Define reusable agent configurations before launching:
 
 ### Technical Notes
 
-- Store templates in `workspaceState` key `pixel-agents.templates`
+- Store templates in `workspaceState` key `agent-craft.templates`
 - Template type: `{ name, cwd?, cliFlags?, palette?, seatId? }`
 - Modify `launchNewTerminal` to accept template config
 - Bottom toolbar: long-press or dropdown on "+ Agent" to pick template
@@ -183,7 +183,7 @@ Define reusable agent configurations before launching:
 
 - `src/types.ts` — `AgentTemplate` interface
 - `src/agentManager.ts` — template-aware `launchNewTerminal`
-- `src/PixelAgentsViewProvider.ts` — template CRUD messages
+- `src/AgentCraftViewProvider.ts` — template CRUD messages
 - `src/constants.ts` — workspace key for templates
 - `webview-ui/src/components/BottomToolbar.tsx` — template picker UI
 - `webview-ui/src/components/SettingsModal.tsx` — template management
@@ -204,7 +204,7 @@ Define reusable agent configurations before launching:
 - Custom templates require Premium license; built-in templates available to all users
 - Template management in Settings modal: list all templates, Edit/Delete buttons on custom ones, "+ New" button
 - `TemplateEditor.tsx`: modal with name, description, system prompt (textarea), CLI flags, palette picker (6 swatches + Auto)
-- Templates persisted in `workspaceState` key `pixel-agents.templates`
+- Templates persisted in `workspaceState` key `agent-craft.templates`
 - Messages: `templatesLoaded`, `saveTemplate`, `deleteTemplate`; `openClaude` now accepts `templateId`
 - `PersistedAgent` stores `templateId` for future restore reference
 - `AgentState` stores `templateId` + `templateName` for runtime display
@@ -251,7 +251,7 @@ Visual timeline per agent showing chronological activity:
 
 - `src/types.ts` — `TimelineEvent` interface
 - `src/transcriptParser.ts` — emit timeline events
-- `src/PixelAgentsViewProvider.ts` — forward timeline events to webview
+- `src/AgentCraftViewProvider.ts` — forward timeline events to webview
 - New: `webview-ui/src/components/ActivityTimeline.tsx`
 - `webview-ui/src/hooks/useExtensionMessages.ts` — timeline state
 - `webview-ui/src/office/components/ToolOverlay.tsx` — timeline trigger
@@ -399,7 +399,7 @@ Visual overlay showing which files are being touched and by whom:
 
 - `src/types.ts` — `FileActivity` tracking
 - `src/transcriptParser.ts` — extract file paths from tool_use
-- `src/PixelAgentsViewProvider.ts` — forward file activity to webview
+- `src/AgentCraftViewProvider.ts` — forward file activity to webview
 - New: `webview-ui/src/components/FileHeatmap.tsx`
 - `webview-ui/src/hooks/useExtensionMessages.ts` — file activity state
 
@@ -454,7 +454,7 @@ Each agent shows git context visually:
 - New: `src/gitTracker.ts` — git status polling per agent
 - `src/types.ts` — `GitStatus` interface
 - `src/agentManager.ts` — start/stop git tracking per agent
-- `src/PixelAgentsViewProvider.ts` — forward git status messages
+- `src/AgentCraftViewProvider.ts` — forward git status messages
 - `webview-ui/src/office/components/ToolOverlay.tsx` — branch label, badge
 - `webview-ui/src/hooks/useExtensionMessages.ts` — git state
 
@@ -617,7 +617,7 @@ Alternative view: project structure as a pixel art city:
 - New: `webview-ui/src/map/mapRenderer.ts`
 - New: `webview-ui/src/map/buildingSprites.ts`
 - `webview-ui/src/App.tsx` — view toggle
-- `src/PixelAgentsViewProvider.ts` — file tree scanning
+- `src/AgentCraftViewProvider.ts` — file tree scanning
 
 ### Implementation Notes
 

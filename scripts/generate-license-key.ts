@@ -1,5 +1,5 @@
 /**
- * Generate valid Pixel Agents Premium license keys.
+ * Generate valid AgentCraft Premium license keys.
  * Run: npx tsx scripts/generate-license-key.ts [count]
  *
  * Key format: PA-XXXX-XXXX-XXXX-XXXX

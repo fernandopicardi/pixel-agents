@@ -142,7 +142,7 @@ export function processTranscriptLine(
 					if (block.type === 'tool_use' && block.id) {
 						const toolName = block.name || '';
 						const status = formatToolStatus(toolName, block.input || {});
-						console.log(`[Pixel Agents] Agent ${agentId} tool start: ${block.id} ${status}`);
+						console.log(`[AgentCraft] Agent ${agentId} tool start: ${block.id} ${status}`);
 						agent.activeToolIds.add(block.id);
 						agent.activeToolStatuses.set(block.id, status);
 						agent.activeToolNames.set(block.id, toolName);
@@ -180,7 +180,7 @@ export function processTranscriptLine(
 				if (hasToolResult) {
 					for (const block of blocks) {
 						if (block.type === 'tool_result' && block.tool_use_id) {
-							console.log(`[Pixel Agents] Agent ${agentId} tool done: ${block.tool_use_id}`);
+							console.log(`[AgentCraft] Agent ${agentId} tool done: ${block.tool_use_id}`);
 							const completedToolId = block.tool_use_id;
 							// If the completed tool was a Task, clear its subagent tools
 							if (agent.activeToolNames.get(completedToolId) === 'Task') {
@@ -318,7 +318,7 @@ function processProgressRecord(
 			if (block.type === 'tool_use' && block.id) {
 				const toolName = block.name || '';
 				const status = formatToolStatus(toolName, block.input || {});
-				console.log(`[Pixel Agents] Agent ${agentId} subagent tool start: ${block.id} ${status} (parent: ${parentToolId})`);
+				console.log(`[AgentCraft] Agent ${agentId} subagent tool start: ${block.id} ${status} (parent: ${parentToolId})`);
 
 				// Track sub-tool IDs
 				let subTools = agent.activeSubagentToolIds.get(parentToolId);
@@ -355,7 +355,7 @@ function processProgressRecord(
 	} else if (msgType === 'user') {
 		for (const block of content) {
 			if (block.type === 'tool_result' && block.tool_use_id) {
-				console.log(`[Pixel Agents] Agent ${agentId} subagent tool done: ${block.tool_use_id} (parent: ${parentToolId})`);
+				console.log(`[AgentCraft] Agent ${agentId} subagent tool done: ${block.tool_use_id} (parent: ${parentToolId})`);
 
 				// Remove from tracking
 				const subTools = agent.activeSubagentToolIds.get(parentToolId);

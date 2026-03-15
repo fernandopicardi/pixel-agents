@@ -25,40 +25,40 @@ export const CHAR_FRAMES_PER_ROW = 7;
 export const CHAR_COUNT = 6;
 
 // ── User-Level Layout Persistence ─────────────────────────────
-export const LAYOUT_FILE_DIR = '.pixel-agents';
+export const LAYOUT_FILE_DIR = '.agent-craft';
 export const LAYOUT_FILE_NAME = 'layout.json';
 export const LAYOUT_FILE_POLL_INTERVAL_MS = 2000;
 
 // ── Smart Notifications ─────────────────────────────────────
 export const LONG_TASK_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 export const LOOP_DETECTION_COUNT = 5;
-export const GLOBAL_KEY_NOTIFICATION_PREFS = 'pixel-agents.notificationPrefs';
+export const GLOBAL_KEY_NOTIFICATION_PREFS = 'agent-craft.notificationPrefs';
 
 // ── Analytics & Scoring ─────────────────────────────────────
 export const MAX_FILE_EVENTS_PER_AGENT = 500;
 export const MAX_TIMELINE_EVENTS = 200;
-export const GLOBAL_KEY_PERFORMANCE_SCORES = 'pixel-agents.performanceScores';
+export const GLOBAL_KEY_PERFORMANCE_SCORES = 'agent-craft.performanceScores';
 export const PERF_LOOP_PENALTY = 10;
 export const PERF_REVERT_PENALTY = 15;
 export const PERF_IDLE_PENALTY_PER_MIN = 2;
 export const PERF_MAX_SCORES_STORED = 20;
 
 // ── Agent Templates ─────────────────────────────────────────
-export const WORKSPACE_KEY_TEMPLATES = 'pixel-agents.templates';
+export const WORKSPACE_KEY_TEMPLATES = 'agent-craft.templates';
 
 // ── Settings Persistence ────────────────────────────────────
-export const GLOBAL_KEY_SOUND_ENABLED = 'pixel-agents.soundEnabled';
+export const GLOBAL_KEY_SOUND_ENABLED = 'agent-craft.soundEnabled';
 
 // ── License ─────────────────────────────────────────────────
-export const GLOBAL_KEY_LICENSE = 'pixel-agents.licenseKey';
-export const COMMAND_ENTER_LICENSE = 'pixel-agents.enterLicenseKey';
+export const GLOBAL_KEY_LICENSE = 'agent-craft.licenseKey';
+export const COMMAND_ENTER_LICENSE = 'agent-craft.enterLicenseKey';
 export const LICENSE_KEY_REGEX = /^PA-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
 // ── IDE Identifiers ─────────────────────────────────────────
-export const VIEW_ID = 'pixel-agents.panelView';
-export const COMMAND_SHOW_PANEL = 'pixel-agents.showPanel';
-export const COMMAND_EXPORT_DEFAULT_LAYOUT = 'pixel-agents.exportDefaultLayout';
-export const WORKSPACE_KEY_AGENTS = 'pixel-agents.agents';
-export const WORKSPACE_KEY_AGENT_SEATS = 'pixel-agents.agentSeats';
-export const WORKSPACE_KEY_LAYOUT = 'pixel-agents.layout';
+export const VIEW_ID = 'agent-craft.panelView';
+export const COMMAND_SHOW_PANEL = 'agent-craft.showPanel';
+export const COMMAND_EXPORT_DEFAULT_LAYOUT = 'agent-craft.exportDefaultLayout';
+export const WORKSPACE_KEY_AGENTS = 'agent-craft.agents';
+export const WORKSPACE_KEY_AGENT_SEATS = 'agent-craft.agentSeats';
+export const WORKSPACE_KEY_LAYOUT = 'agent-craft.layout';
 export const TERMINAL_NAME_PREFIX = 'Claude Code';

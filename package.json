@@ -1,12 +1,12 @@
 {
-  "name": "pixel-agents",
-  "displayName": "Pixel Agents",
+  "name": "agent-craft",
+  "displayName": "AgentCraft",
   "description": "Pixel art office where your Claude Code agents come to life as animated characters — works in VS Code and Cursor IDE",
   "version": "2.0.0",
   "publisher": "fernandopicardi",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fernandopicardi/pixel-agents"
+    "url": "https://github.com/fernandopicardi/agent-craft"
   },
   "icon": "icon.png",
   "license": "MIT",
@@ -31,33 +31,33 @@
   "contributes": {
     "commands": [
       {
-        "command": "pixel-agents.showPanel",
-        "title": "Pixel Agents: Show Panel"
+        "command": "agent-craft.showPanel",
+        "title": "AgentCraft: Show Panel"
       },
       {
-        "command": "pixel-agents.exportDefaultLayout",
-        "title": "Pixel Agents: Export Layout as Default"
+        "command": "agent-craft.exportDefaultLayout",
+        "title": "AgentCraft: Export Layout as Default"
       },
       {
-        "command": "pixel-agents.enterLicenseKey",
-        "title": "Pixel Agents: Enter License Key"
+        "command": "agent-craft.enterLicenseKey",
+        "title": "AgentCraft: Enter License Key"
       }
     ],
     "viewsContainers": {
       "panel": [
         {
-          "id": "pixel-agents-panel",
-          "title": "Pixel Agents",
+          "id": "agent-craft-panel",
+          "title": "AgentCraft",
           "icon": "$(window)"
         }
       ]
     },
     "views": {
-      "pixel-agents-panel": [
+      "agent-craft-panel": [
         {
           "type": "webview",
-          "id": "pixel-agents.panelView",
-          "name": "Pixel Agents"
+          "id": "agent-craft.panelView",
+          "name": "AgentCraft"
         }
       ]
     }

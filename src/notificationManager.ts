@@ -74,7 +74,7 @@ export function notifyPermissionWait(
 
 	const label = agent.folderName || `Agent #${agent.id}`;
 	vscode.window.showWarningMessage(
-		`Pixel Agents: ${label} needs permission to continue`,
+		`AgentCraft: ${label} needs permission to continue`,
 		'Focus Terminal',
 	).then((action) => {
 		if (action === 'Focus Terminal') {
@@ -104,7 +104,7 @@ export function notifyLongTaskComplete(
 	const label = agent.folderName || `Agent #${agent.id}`;
 	const minutes = Math.round(elapsed / 60000);
 	vscode.window.showInformationMessage(
-		`Pixel Agents: ${label} finished a ${minutes}min task`,
+		`AgentCraft: ${label} finished a ${minutes}min task`,
 		'Focus Terminal',
 	).then((action) => {
 		if (action === 'Focus Terminal') {
@@ -129,7 +129,7 @@ export function notifyLoopDetected(
 	agent.loopNotified = true;
 	const label = agent.folderName || `Agent #${agent.id}`;
 	vscode.window.showWarningMessage(
-		`Pixel Agents: ${label} may be stuck in a loop (${toolName} called ${LOOP_DETECTION_COUNT}+ times)`,
+		`AgentCraft: ${label} may be stuck in a loop (${toolName} called ${LOOP_DETECTION_COUNT}+ times)`,
 		'Focus Terminal',
 	).then((action) => {
 		if (action === 'Focus Terminal') {

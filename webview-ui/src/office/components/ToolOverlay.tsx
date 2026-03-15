@@ -186,7 +186,7 @@ export function ToolOverlay({
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 {dotColor && (
                   <span
-                    className={isActive && !hasPermission ? 'pixel-agents-pulse' : undefined}
+                    className={isActive && !hasPermission ? 'agent-craft-pulse' : undefined}
                     style={{
                       width: 6,
                       height: 6,

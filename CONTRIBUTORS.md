@@ -1,4 +1,4 @@
-# Contributing to Pixel Agents
+# Contributing to AgentCraft
 
 Thanks for your interest in contributing! All contributions are welcome.
 
@@ -7,8 +7,8 @@ This project is licensed under the [MIT License](LICENSE).
 ## Getting Started
 
 ```bash
-git clone https://github.com/fernandopicardi/pixel-agents.git
-cd pixel-agents
+git clone https://github.com/fernandopicardi/agent-craft.git
+cd agent-craft
 npm install
 cd webview-ui && npm install && cd ..
 npm run build
@@ -39,4 +39,4 @@ npm run watch
 
 ## Reporting Issues
 
-[Open an issue](https://github.com/fernandopicardi/pixel-agents/issues) with reproduction steps, VS Code/Cursor version, and OS.
+[Open an issue](https://github.com/fernandopicardi/agent-craft/issues) with reproduction steps, VS Code/Cursor version, and OS.

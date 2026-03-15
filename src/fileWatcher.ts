@@ -39,7 +39,7 @@ export function startFileWatching(
 		});
 		fileWatchers.set(agentId, watcher);
 	} catch (e) {
-		console.log(`[Pixel Agents] fs.watch failed for agent ${agentId}: ${e}`);
+		console.log(`[AgentCraft] fs.watch failed for agent ${agentId}: ${e}`);
 	}
 
 	// Secondary: fs.watchFile (stat-based polling, reliable on macOS)
@@ -48,7 +48,7 @@ export function startFileWatching(
 			readNewLines(agentId, agents, waitingTimers, permissionTimers, webview, onNotification);
 		});
 	} catch (e) {
-		console.log(`[Pixel Agents] fs.watchFile failed for agent ${agentId}: ${e}`);
+		console.log(`[AgentCraft] fs.watchFile failed for agent ${agentId}: ${e}`);
 	}
 
 	// Tertiary: manual poll as last resort
@@ -103,7 +103,7 @@ export function readNewLines(
 			processTranscriptLine(agentId, line, agents, waitingTimers, permissionTimers, webview, onNotification);
 		}
 	} catch (e) {
-		console.log(`[Pixel Agents] Read error for agent ${agentId}: ${e}`);
+		console.log(`[AgentCraft] Read error for agent ${agentId}: ${e}`);
 	}
 }
 
@@ -166,7 +166,7 @@ function scanForNewJsonlFiles(
 			knownJsonlFiles.add(file);
 			if (activeAgentIdRef.current !== null) {
 				// Active agent focused → /clear reassignment
-				console.log(`[Pixel Agents] New JSONL detected: ${path.basename(file)}, reassigning to agent ${activeAgentIdRef.current}`);
+				console.log(`[AgentCraft] New JSONL detected: ${path.basename(file)}, reassigning to agent ${activeAgentIdRef.current}`);
 				reassignAgentToFile(
 					activeAgentIdRef.current, file,
 					agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers,
@@ -240,7 +240,7 @@ function adoptTerminalForFile(
 	activeAgentIdRef.current = id;
 	persistAgents();
 
-	console.log(`[Pixel Agents] Agent ${id}: adopted terminal "${terminal.name}" for ${path.basename(jsonlFile)}`);
+	console.log(`[AgentCraft] Agent ${id}: adopted terminal "${terminal.name}" for ${path.basename(jsonlFile)}`);
 	webview?.postMessage({ type: 'agentCreated', id });
 
 	startFileWatching(id, jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview);

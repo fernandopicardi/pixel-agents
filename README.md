@@ -1,10 +1,10 @@
-# Pixel Agents
+# AgentCraft
 
 A VS Code / Cursor IDE extension that turns your AI coding agents into animated pixel art characters in a virtual office.
 
 Each Claude Code terminal you open spawns a character that walks around, sits at desks, and visually reflects what the agent is doing — typing when writing code, reading when searching files, waiting when it needs your attention.
 
-![Pixel Agents screenshot](webview-ui/public/Screenshot.jpg)
+![AgentCraft screenshot](webview-ui/public/Screenshot.jpg)
 
 ## Features
 
@@ -21,7 +21,7 @@ Each Claude Code terminal you open spawns a character that walks around, sits at
 - **Multi-IDE support** — works in both VS Code and Cursor IDE
 
 <p align="center">
-  <img src="webview-ui/public/characters.png" alt="Pixel Agents characters" width="320" height="72" style="image-rendering: pixelated;">
+  <img src="webview-ui/public/characters.png" alt="AgentCraft characters" width="320" height="72" style="image-rendering: pixelated;">
 </p>
 
 ## Requirements
@@ -33,7 +33,7 @@ Each Claude Code terminal you open spawns a character that walks around, sits at
 
 ### Install from VSIX (VS Code or Cursor)
 
-Download the latest `.vsix` from [Releases](https://github.com/fernandopicardi/pixel-agents/releases), then:
+Download the latest `.vsix` from [Releases](https://github.com/fernandopicardi/agent-craft/releases), then:
 
 #### Method A — Command Palette (recommended)
 
@@ -46,10 +46,10 @@ Download the latest `.vsix` from [Releases](https://github.com/fernandopicardi/p
 
 ```bash
 # VS Code
-code --install-extension pixel-agents-2.0.0.vsix
+code --install-extension agent-craft-2.0.0.vsix
 
 # Cursor
-cursor --install-extension pixel-agents-2.0.0.vsix
+cursor --install-extension agent-craft-2.0.0.vsix
 ```
 
 #### Method C — Drag and Drop
@@ -60,8 +60,8 @@ cursor --install-extension pixel-agents-2.0.0.vsix
 ### Build from source
 
 ```bash
-git clone https://github.com/fernandopicardi/pixel-agents.git
-cd pixel-agents
+git clone https://github.com/fernandopicardi/agent-craft.git
+cd agent-craft
 npm install
 cd webview-ui && npm install && cd ..
 npm run build
@@ -77,7 +77,7 @@ npx @vscode/vsce package --allow-missing-repository
 
 ### Usage
 
-1. Open the **Pixel Agents** panel (bottom panel area alongside your terminal)
+1. Open the **AgentCraft** panel (bottom panel area alongside your terminal)
 2. Click **+ Agent** to spawn a new Claude Code terminal and its character
 3. Start coding with Claude — watch the character react in real time
 4. **Hover** over a character to see its current task and progress
@@ -110,7 +110,7 @@ The extension works without the tileset — you get default characters and basic
 
 ## How It Works
 
-Pixel Agents watches Claude Code's JSONL transcript files to track what each agent is doing. When an agent uses a tool (like writing a file or running a command), the extension detects it and updates the character's animation accordingly. No modifications to Claude Code are needed — it's purely observational.
+AgentCraft watches Claude Code's JSONL transcript files to track what each agent is doing. When an agent uses a tool (like writing a file or running a command), the extension detects it and updates the character's animation accordingly. No modifications to Claude Code are needed — it's purely observational.
 
 The webview runs a lightweight game loop with canvas rendering, BFS pathfinding, and a character state machine (idle -> walk -> type/read). Everything is pixel-perfect at integer zoom levels.
 
@@ -132,7 +132,7 @@ See [ROADMAP.md](ROADMAP.md) for the full feature roadmap with 11 planned featur
 
 ## Credits
 
-This project is a fork of [Pixel Agents](https://github.com/pablodelucca/pixel-agents) by **Pablo De Lucca**, licensed under MIT. Character sprites based on [JIK-A-4, Metro City](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack).
+This project is a fork of [Pixel Agents](https://github.com/pablodelucca/pixel-agents) by **Pablo De Lucca** (original project), licensed under MIT. Character sprites based on [JIK-A-4, Metro City](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack).
 
 ## License
 

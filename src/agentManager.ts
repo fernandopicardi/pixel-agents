@@ -45,7 +45,7 @@ export function getProjectDirPath(cwd?: string): string | null {
 	if (!workspacePath) return null;
 	const dirName = workspacePath.replace(/[^a-zA-Z0-9-]/g, '-');
 	const projectDir = path.join(os.homedir(), '.claude', 'projects', dirName);
-	console.log(`[Pixel Agents] Project dir: ${workspacePath} → ${dirName}`);
+	console.log(`[AgentCraft] Project dir: ${workspacePath} → ${dirName}`);
 	return projectDir;
 }
 
@@ -85,7 +85,7 @@ export async function launchNewTerminal(
 
 	const projectDir = getProjectDirPath(cwd);
 	if (!projectDir) {
-		console.log(`[Pixel Agents] No project dir, cannot track agent`);
+		console.log(`[AgentCraft] No project dir, cannot track agent`);
 		return;
 	}
 
@@ -126,7 +126,7 @@ export async function launchNewTerminal(
 	agents.set(id, agent);
 	activeAgentIdRef.current = id;
 	persistAgents();
-	console.log(`[Pixel Agents] Agent ${id}: created for terminal ${terminal.name}${template ? ` (template: ${template.name})` : ''}`);
+	console.log(`[AgentCraft] Agent ${id}: created for terminal ${terminal.name}${template ? ` (template: ${template.name})` : ''}`);
 	webview?.postMessage({
 		type: 'agentCreated',
 		id,
@@ -145,7 +145,7 @@ export async function launchNewTerminal(
 	const pollTimer = setInterval(() => {
 		try {
 			if (fs.existsSync(agent.jsonlFile)) {
-				console.log(`[Pixel Agents] Agent ${id}: found JSONL file ${path.basename(agent.jsonlFile)}`);
+				console.log(`[AgentCraft] Agent ${id}: found JSONL file ${path.basename(agent.jsonlFile)}`);
 				clearInterval(pollTimer);
 				jsonlPollTimers.delete(id);
 				startFileWatching(id, agent.jsonlFile, agents, fileWatchers, pollingTimers, waitingTimers, permissionTimers, webview, onNotification);
@@ -265,7 +265,7 @@ export function restoreAgents(
 
 		agents.set(p.id, agent);
 		knownJsonlFiles.add(p.jsonlFile);
-		console.log(`[Pixel Agents] Restored agent ${p.id} → terminal "${p.terminalName}"`);
+		console.log(`[AgentCraft] Restored agent ${p.id} → terminal "${p.terminalName}"`);
 
 		if (p.id > maxId) maxId = p.id;
 		// Extract terminal index from name like "Claude Code #3"
@@ -288,7 +288,7 @@ export function restoreAgents(
 				const pollTimer = setInterval(() => {
 					try {
 						if (fs.existsSync(agent.jsonlFile)) {
-							console.log(`[Pixel Agents] Restored agent ${p.id}: found JSONL file`);
+							console.log(`[AgentCraft] Restored agent ${p.id}: found JSONL file`);
 							clearInterval(pollTimer);
 							jsonlPollTimers.delete(p.id);
 							const stat = fs.statSync(agent.jsonlFile);
@@ -362,7 +362,7 @@ export function adoptExistingTerminals(
 	}
 
 	// Find unowned terminals whose name matches Claude Code patterns
-	// Patterns: "Claude Code #N" (Pixel Agents), "claude" (default CLI), "Claude Code" (generic)
+	// Patterns: "Claude Code #N" (AgentCraft), "claude" (default CLI), "Claude Code" (generic)
 	const candidateTerminals = vscode.window.terminals.filter(t => {
 		if (ownedTerminals.has(t)) return false;
 		const name = t.name.toLowerCase();
@@ -370,7 +370,7 @@ export function adoptExistingTerminals(
 	});
 
 	if (candidateTerminals.length === 0) {
-		console.log('[Pixel Agents] adoptExistingTerminals: no unowned Claude Code terminals found');
+		console.log('[AgentCraft] adoptExistingTerminals: no unowned Claude Code terminals found');
 		return;
 	}
 
@@ -402,7 +402,7 @@ export function adoptExistingTerminals(
 	);
 
 	if (recentFiles.length === 0) {
-		console.log('[Pixel Agents] adoptExistingTerminals: no active JSONL files in project dir');
+		console.log('[AgentCraft] adoptExistingTerminals: no active JSONL files in project dir');
 		return;
 	}
 
@@ -410,7 +410,7 @@ export function adoptExistingTerminals(
 	const adoptCount = Math.min(candidateTerminals.length, recentFiles.length);
 	if (candidateTerminals.length !== recentFiles.length) {
 		console.log(
-			`[Pixel Agents] adoptExistingTerminals: count mismatch — ${candidateTerminals.length} terminals vs ${recentFiles.length} active JSONL files. Adopting ${adoptCount}.`,
+			`[AgentCraft] adoptExistingTerminals: count mismatch — ${candidateTerminals.length} terminals vs ${recentFiles.length} active JSONL files. Adopting ${adoptCount}.`,
 		);
 	}
 
@@ -449,7 +449,7 @@ export function adoptExistingTerminals(
 		agents.set(id, agent);
 		activeAgentIdRef.current = id;
 
-		console.log(`[Pixel Agents] Agent ${id}: auto-adopted terminal "${terminal.name}" → ${path.basename(jsonl.file)}`);
+		console.log(`[AgentCraft] Agent ${id}: auto-adopted terminal "${terminal.name}" → ${path.basename(jsonl.file)}`);
 		webview?.postMessage({ type: 'agentCreated', id });
 
 		// Skip to end of existing content, then start watching for new activity
@@ -466,7 +466,7 @@ export function adoptExistingTerminals(
 
 	if (adopted > 0) {
 		persistAgents();
-		console.log(`[Pixel Agents] Auto-adopted ${adopted} existing Claude Code terminal(s) for this project`);
+		console.log(`[AgentCraft] Auto-adopted ${adopted} existing Claude Code terminal(s) for this project`);
 	}
 }
 
@@ -492,7 +492,7 @@ export function sendExistingAgents(
 			folderNames[id] = agent.folderName;
 		}
 	}
-	console.log(`[Pixel Agents] sendExistingAgents: agents=${JSON.stringify(agentIds)}, meta=${JSON.stringify(agentMeta)}`);
+	console.log(`[AgentCraft] sendExistingAgents: agents=${JSON.stringify(agentIds)}, meta=${JSON.stringify(agentMeta)}`);
 
 	webview.postMessage({
 		type: 'existingAgents',

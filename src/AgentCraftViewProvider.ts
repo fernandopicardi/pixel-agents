@@ -32,7 +32,7 @@ import {
 } from './notificationManager.js';
 import { calculateScore, storeScore, getStoredScores } from './performanceScorer.js';
 
-export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
+export class AgentCraftViewProvider implements vscode.WebviewViewProvider {
 	nextAgentId = { current: 1 };
 	nextTerminalIndex = { current: 1 };
 	agents = new Map<number, AgentState>();
@@ -131,7 +131,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 				}
 			} else if (message.type === 'saveAgentSeats') {
 				// Store seat assignments in a separate key (never touched by persistAgents)
-				console.log(`[Pixel Agents] saveAgentSeats:`, JSON.stringify(message.seats));
+				console.log(`[AgentCraft] saveAgentSeats:`, JSON.stringify(message.seats));
 				this.context.workspaceState.update(WORKSPACE_KEY_AGENT_SEATS, message.seats);
 			} else if (message.type === 'saveLayout') {
 				this.layoutWatcher?.markOwnWrite();
@@ -321,16 +321,16 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 			} else if (message.type === 'exportLayout') {
 				const layout = readLayoutFromFile();
 				if (!layout) {
-					vscode.window.showWarningMessage('Pixel Agents: No saved layout to export.');
+					vscode.window.showWarningMessage('AgentCraft: No saved layout to export.');
 					return;
 				}
 				const uri = await vscode.window.showSaveDialog({
 					filters: { 'JSON Files': ['json'] },
-					defaultUri: vscode.Uri.file(path.join(os.homedir(), 'pixel-agents-layout.json')),
+					defaultUri: vscode.Uri.file(path.join(os.homedir(), 'agent-craft-layout.json')),
 				});
 				if (uri) {
 					fs.writeFileSync(uri.fsPath, JSON.stringify(layout, null, 2), 'utf-8');
-					vscode.window.showInformationMessage('Pixel Agents: Layout exported successfully.');
+					vscode.window.showInformationMessage('AgentCraft: Layout exported successfully.');
 				}
 			} else if (message.type === 'importLayout') {
 				const uris = await vscode.window.showOpenDialog({
@@ -342,15 +342,15 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 					const raw = fs.readFileSync(uris[0].fsPath, 'utf-8');
 					const imported = JSON.parse(raw) as Record<string, unknown>;
 					if (imported.version !== 1 || !Array.isArray(imported.tiles)) {
-						vscode.window.showErrorMessage('Pixel Agents: Invalid layout file.');
+						vscode.window.showErrorMessage('AgentCraft: Invalid layout file.');
 						return;
 					}
 					this.layoutWatcher?.markOwnWrite();
 					writeLayoutToFile(imported);
 					this.webview?.postMessage({ type: 'layoutLoaded', layout: imported });
-					vscode.window.showInformationMessage('Pixel Agents: Layout imported successfully.');
+					vscode.window.showInformationMessage('AgentCraft: Layout imported successfully.');
 				} catch {
-					vscode.window.showErrorMessage('Pixel Agents: Failed to read or parse layout file.');
+					vscode.window.showErrorMessage('AgentCraft: Failed to read or parse layout file.');
 				}
 			}
 		});
@@ -392,18 +392,18 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	exportDefaultLayout(): void {
 		const layout = readLayoutFromFile();
 		if (!layout) {
-			vscode.window.showWarningMessage('Pixel Agents: No saved layout found.');
+			vscode.window.showWarningMessage('AgentCraft: No saved layout found.');
 			return;
 		}
 		const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 		if (!workspaceRoot) {
-			vscode.window.showErrorMessage('Pixel Agents: No workspace folder found.');
+			vscode.window.showErrorMessage('AgentCraft: No workspace folder found.');
 			return;
 		}
 		const targetPath = path.join(workspaceRoot, 'webview-ui', 'public', 'assets', 'default-layout.json');
 		const json = JSON.stringify(layout, null, 2);
 		fs.writeFileSync(targetPath, json, 'utf-8');
-		vscode.window.showInformationMessage(`Pixel Agents: Default layout exported to ${targetPath}`);
+		vscode.window.showInformationMessage(`AgentCraft: Default layout exported to ${targetPath}`);
 	}
 
 	/** Send available templates to the webview */
@@ -421,7 +421,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 	private startLayoutWatcher(): void {
 		if (this.layoutWatcher) return;
 		this.layoutWatcher = watchLayoutFile((layout) => {
-			console.log('[Pixel Agents] External layout change — pushing to webview');
+			console.log('[AgentCraft] External layout change — pushing to webview');
 			this.webview?.postMessage({ type: 'layoutLoaded', layout });
 		});
 	}

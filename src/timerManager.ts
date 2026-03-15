@@ -104,7 +104,7 @@ export function startPermissionTimer(
 
 		if (hasNonExempt) {
 			agent.permissionSent = true;
-			console.log(`[Pixel Agents] Agent ${agentId}: possible permission wait detected`);
+			console.log(`[AgentCraft] Agent ${agentId}: possible permission wait detected`);
 			onPermissionDetected?.(agentId);
 			webview?.postMessage({
 				type: 'agentToolPermission',
